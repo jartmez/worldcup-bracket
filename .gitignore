@@ -1,0 +1,16 @@
+﻿# Secrets - never commit
+.dev.vars
+.env
+*.local
+
+# Windows / Google Drive cruft
+desktop.ini
+Thumbs.db
+
+# Node / build (in case you add tooling later)
+node_modules/
+dist/
+
+# Editor
+.vscode/
+.idea/

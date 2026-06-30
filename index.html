@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>2026 World Cup — Radial Knockout Bracket</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>2026 FIFA World Cup — Knockout Bracket</h1>
+    <div class="badges">
+      <span id="data-badge" class="badge soft">loading…</span>
+      <span id="geo-badge" class="badge">checking geometry…</span>
+    </div>
+  </header>
+
+  <main class="stage">
+    <aside id="odds-panel" aria-label="Title odds">
+      <h2>Title odds</h2>
+      <p class="odds-note">Elo model estimate — not betting odds</p>
+      <ol id="odds-list"></ol>
+    </aside>
+
+    <svg id="bracket" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet"
+         role="img" aria-label="Radial knockout bracket, 32 teams converging to a centre trophy">
+      <defs id="defs"></defs>
+      <g id="connectors"></g>
+      <g id="nodes"></g>
+      <g id="center"></g>
+    </svg>
+    <div id="tooltip" class="tooltip" hidden></div>
+  </main>
+
+  <script src="bracket.js"></script>
+  <script src="data.js"></script>
+  <script src="elo.js"></script>
+  <script src="snapshot.js"></script>
+  <script src="results.js"></script>
+  <script src="sim.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
