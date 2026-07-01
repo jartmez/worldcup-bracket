@@ -18,11 +18,20 @@
   var NODE_R = 24, INNER_R = 21, CHAMP_R = 30, LABEL_GAP = 23;
   var REFRESH_MS = 60000;
   var SIM_RUNS = 20000;
+  var MIN_LIQ = 20000;                // Polymarket per-team liquidity floor for match pills
+  var ROUND_LABEL = { 4: 'Round of 32', 3: 'Round of 16', 2: 'Quarterfinals', 1: 'Semifinals', 0: 'Final' };
+  // Per-tie derivation logs are silent by default; append ?debugTies to the URL to see them.
+  var DEBUG_TIES = /[?&]debugTies\b/.test((typeof location !== 'undefined' && location.search) || '');
 
   var clipSeq = 0;
   var currentOdds = {};               // tla -> displayed probability (scenario in sim, baseline in live)
   var currentBaseOdds = {};           // pure Elo model: real results + Elo
   var currentScenarioOdds = {};       // real results + your picks + Elo
+  var currentMarketOdds = {};         // tla -> Polymarket title probability
+  var currentMarketElim = {};         // tla -> true if Polymarket resolved it out
+  var currentMatchOdds = null;        // Polymarket name -> per-team stage-of-elimination data
+  var marketOk = false;               // Polymarket odds available and usable
+  var marketFetchedAt = null;
   var currentElim = {};               // tla -> true if the team has lost a REAL match
   var currentElimBy = {};             // tla -> team that eliminated them (real)
   var currentPickElim = {};           // tla -> true if knocked out by one of your picks
@@ -52,6 +61,95 @@
         var snap = window.WC_SNAPSHOT || { matches: [] };
         return { matches: snap.matches || [], source: 'snapshot' };
       });
+  }
+
+  // Polymarket live title odds (functions/api/odds.js). Resolves to the parsed
+  // payload or null on any failure, so the caller can fall back to Elo.
+  function loadMarket() {
+    return fetch('/api/odds', { headers: { Accept: 'application/json' } })
+      .then(function (r) { if (!r.ok) throw new Error('odds ' + r.status); return r.json(); })
+      .then(function (d) { if (!d || d.source !== 'polymarket' || !d.odds) throw new Error('unavailable'); return d; })
+      .catch(function () { return null; });
+  }
+  // Map Polymarket-name odds onto our FIFA team codes via the data.js name map.
+  function marketByTla(oddsByName) {
+    var out = {};
+    Object.keys(TeamData.FIFA).forEach(function (tla) {
+      var pn = TeamData.polyName(TeamData.FIFA[tla].name);
+      if (oddsByName[pn] != null) out[tla] = oddsByName[pn];
+    });
+    return out;
+  }
+  // Polymarket-resolved-out names -> our FIFA team codes.
+  function marketElimByTla(names) {
+    var set = {}; (names || []).forEach(function (n) { set[n] = 1; });
+    var out = {};
+    Object.keys(TeamData.FIFA).forEach(function (tla) {
+      if (set[TeamData.polyName(TeamData.FIFA[tla].name)]) out[tla] = true;
+    });
+    return out;
+  }
+
+  // Polymarket name for a team object, via the data.js name map.
+  function polyOf(t) { var f = TeamData.FIFA[t.code]; return TeamData.polyName(f ? f.name : t.code); }
+
+  // A tie is market-derivable only if both teams are known and it is not finished.
+  // Self-adjusting: whichever round holds such ties qualifies, all others do not.
+  function isDerivableTie(n) {
+    return !!(n.children.length && !n.winner && n.status !== 'FINISHED' && n.teamA && n.teamB);
+  }
+
+  // Per-team stage-of-elimination data (functions/api/match-odds.js). Resolves to
+  // the teams map or null on any failure, so each tie can fall back to Elo.
+  function loadMatchOdds(names) {
+    if (!names.length) return Promise.resolve(null);
+    return fetch('/api/match-odds?teams=' + encodeURIComponent(names.join(',')), { headers: { Accept: 'application/json' } })
+      .then(function (r) { if (!r.ok) throw new Error('match-odds ' + r.status); return r.json(); })
+      .then(function (d) { return (d && d.teams) ? d.teams : null; })
+      .catch(function () { return null; });
+  }
+
+  // Polymarket names of every team in a currently market-derivable tie (live only).
+  function qualifyingTieTeams() {
+    var model = buildModel(lastMatches);
+    var set = {};
+    Bracket.allNodes(model.root).forEach(function (n) {
+      if (isDerivableTie(n)) { set[polyOf(n.teamA)] = 1; set[polyOf(n.teamB)] = 1; }
+    });
+    return Object.keys(set).sort();
+  }
+
+  // Derive a tie's win split from Polymarket, or report why it falls back to Elo.
+  // P(A wins) = 1 - A's "eliminated at round R" Yes; normalize the pair to sum 1.
+  function marketDerive(n) {
+    if (mode !== 'live') return { ok: false, reason: 'sim mode' };
+    if (!currentMatchOdds) return { ok: false, reason: 'no market data' };
+    var R = ROUND_LABEL[n.depth];
+    if (!R || !n.teamA || !n.teamB) return { ok: false, reason: 'unknown round or teams' };
+    var pa = polyOf(n.teamA), pb = polyOf(n.teamB);
+    var ea = currentMatchOdds[pa], eb = currentMatchOdds[pb];
+    if (!ea) return { ok: false, reason: 'no event for ' + pa };
+    if (!eb) return { ok: false, reason: 'no event for ' + pb };
+    var ra = ea.rounds && ea.rounds[R], rb = eb.rounds && eb.rounds[R];
+    if (!ra || !rb) return { ok: false, reason: 'missing "' + R + '" outcome' };
+    if (ra.closed || rb.closed) return { ok: false, reason: '"' + R + '" closed (divergence)' };
+    if ((ea.liquidity || 0) < MIN_LIQ || (eb.liquidity || 0) < MIN_LIQ) return { ok: false, reason: 'liquidity < ' + MIN_LIQ };
+    var A = 1 - ra.yes, B = 1 - rb.yes, sum = A + B;
+    if (sum < 0.6 || sum > 1.4) return { ok: false, reason: 'raw sum ' + sum.toFixed(3) + ' out of 0.6..1.4' };
+    return { ok: true, a: A / sum, b: B / sum, rawA: A, rawB: B, sum: sum, round: R };
+  }
+
+  // First-run visibility: log each qualifying tie's raw and normalized split.
+  function logTies() {
+    var model = buildModel(lastMatches);
+    Bracket.allNodes(model.root).forEach(function (n) {
+      if (!isDerivableTie(n)) return;
+      var md = marketDerive(n), tag = n.teamA.code + ' v ' + n.teamB.code;
+      if (md.ok) console.log('[tie] ' + tag + ' @ ' + md.round + ' | raw A=' + md.rawA.toFixed(3) +
+        ' B=' + md.rawB.toFixed(3) + ' sum=' + md.sum.toFixed(3) + ' -> ' +
+        Math.round(md.a * 100) + '% / ' + Math.round(md.b * 100) + '% (Polymarket-derived)');
+      else console.log('[tie] ' + tag + ' -> Elo (' + md.reason + ')');
+    });
   }
 
   function winnerOf(n) { return n.children.length ? n.winner : n.team; }
@@ -230,9 +328,16 @@
       var bTxt = (b < 0.001) ? '<0.1%' : pct(b);
       return team.name + ' · title ' + sTxt + ' (Elo ' + bTxt + ')';
     }
+    if (marketOk) {
+      if (currentMarketElim[team.code]) return team.name + ' · out (Polymarket)';
+      var mo = currentMarketOdds[team.code];
+      if (mo != null) return team.name + ' · title ' + pct(mo) + ' (Polymarket)';
+      var eb = currentBaseOdds[team.code];
+      return team.name + ' · title ' + ((eb == null || eb < 0.001) ? '<0.1%' : pct(eb)) + ' (Elo)';
+    }
     var o = currentBaseOdds[team.code];
     if (o == null || o < 0.001) return team.name + ' · title <0.1%';
-    return team.name + ' · title ' + pct(o);
+    return team.name + ' · title ' + pct(o) + ' (Elo)';
   }
 
   // Kickoff helpers (viewer's local timezone).
@@ -249,13 +354,15 @@
   // Always-visible pill at an undecided matchup: favourite + win %, a kickoff
   // line beneath, and a LIVE/TODAY marker above when relevant.
   function matchLabel(n) {
-    var pa = Sim.eloProb(rate(n.teamA.code), rate(n.teamB.code));
+    var md = marketDerive(n);
+    var market = md.ok;
+    var pa = market ? md.a : Sim.eloProb(rate(n.teamA.code), rate(n.teamB.code));
     var favA = pa >= 0.5;
     var fav = favA ? n.teamA : n.teamB;
     var favP = Math.round((favA ? pa : 1 - pa) * 100);
     var txt = fav.code + ' ' + favP + '%';
     var w = txt.length * 6.9 + 13, h = 17.5;
-    var g = el('g', { class: 'mlabel' });
+    var g = el('g', { class: 'mlabel' + (market ? ' market' : '') });
     g.appendChild(el('rect', { x: n.x - w / 2, y: n.y - h / 2, width: w, height: h, rx: 6.5, class: 'mlabel-bg' }));
     var t = el('text', { x: n.x, y: n.y, class: 'mlabel-txt' });
     t.textContent = txt;
@@ -288,11 +395,11 @@
       g.appendChild(badge);
     }
 
-    attachTip(g, matchTooltip(n));
+    attachTip(g, matchTooltip(n, market ? pa : null));
     return g;
   }
 
-  function matchTooltip(n) {
+  function matchTooltip(n, marketPa) {
     var a = n.teamA, b = n.teamB;
     var an = a ? a.code : 'TBD', bn = b ? b.code : 'TBD';
     if (n.status === 'FINISHED' && n.scoreLine) {
@@ -300,9 +407,11 @@
       return an + '  ' + n.scoreLine + '  ' + bn + (n.winner ? '  ➜ ' + n.winner.code + ' won' : '') + pens;
     }
     if (a && b) {
-      var pa = Sim.eloProb(rate(a.code), rate(b.code));
+      var market = (marketPa != null);
+      var pa = market ? marketPa : Sim.eloProb(rate(a.code), rate(b.code));
       var when = n.kickoff ? '  ·  ' + (isLive(n.status) ? 'LIVE now' : kickShort(n.kickoff)) : '';
-      return an + ' ' + Math.round(pa * 100) + '%  v  ' + Math.round((1 - pa) * 100) + '% ' + bn + when + '  (Elo model)';
+      var src = market ? 'Polymarket-derived' : 'Elo model estimate';
+      return an + ' ' + Math.round(pa * 100) + '%  v  ' + Math.round((1 - pa) * 100) + '% ' + bn + when + '  (' + src + ')';
     }
     return an + ' v ' + bn;
   }
@@ -321,28 +430,48 @@
     currentOdds = (mode === 'sim') ? currentScenarioOdds : currentBaseOdds;
   }
 
+  // Displayed title probability for a team in the current mode:
+  //  - Simulate: Elo scenario (real + picks + Elo), untouched by this pass.
+  //  - Live + market up: Polymarket, with per-team Elo fallback for any team the
+  //    market does not cover (never blank).
+  //  - Live + market down: Elo baseline.
+  function dispOdds(code, sim, useMarket) {
+    if (sim) return currentScenarioOdds[code] || 0;
+    if (useMarket) {
+      if (currentMarketElim[code]) return 0;                                  // Polymarket says out
+      return (currentMarketOdds[code] != null) ? currentMarketOdds[code] : (currentBaseOdds[code] || 0);
+    }
+    return currentBaseOdds[code] || 0;
+  }
+
   function renderOdds() {
     var list = document.getElementById('odds-list');
     if (!list) return;
     var sim = mode === 'sim';
+    var useMarket = !sim && marketOk;
+
     var h2 = document.querySelector('#odds-panel h2');
     if (h2) h2.textContent = sim ? 'Title odds · Sim' : 'Title odds';
     var note = document.querySelector('#odds-panel .odds-note');
     if (note) note.textContent = sim
-      ? 'Gold = your picks, muted = Elo model (not betting odds)'
-      : 'Elo model estimate (not betting odds)';
+      ? 'Gold = your picks, muted = Elo model'
+      : (useMarket ? 'Polymarket live market' : 'Elo model estimate (fallback)');
     list.className = sim ? 'sim' : '';
     clear(list);
 
-    var rankBy = sim ? currentScenarioOdds : currentBaseOdds;
-    var ranked = Object.keys(rankBy)
-      .filter(function (c) { return rankBy[c] >= 0.001; })
-      .sort(function (a, b) { return rankBy[b] - rankBy[a]; })
+    // Candidate teams: Elo baseline keys plus any market-covered team.
+    var pool = {};
+    Object.keys(currentBaseOdds).forEach(function (c) { pool[c] = 1; });
+    if (useMarket) Object.keys(currentMarketOdds).forEach(function (c) { pool[c] = 1; });
+    if (sim) { pool = {}; Object.keys(currentScenarioOdds).forEach(function (c) { pool[c] = 1; }); }
+
+    var ranked = Object.keys(pool)
+      .filter(function (c) { return dispOdds(c, sim, useMarket) >= 0.001; })
+      .sort(function (a, b) { return dispOdds(b, sim, useMarket) - dispOdds(a, sim, useMarket); })
       .slice(0, 12);
 
     ranked.forEach(function (code) {
-      var s = currentScenarioOdds[code] || 0, b = currentBaseOdds[code] || 0;
-      var shown = sim ? s : b;
+      var shown = dispOdds(code, sim, useMarket);
       var ref = TeamData.FIFA[code];
       var li = document.createElement('li');
 
@@ -354,6 +483,7 @@
       var fill = document.createElement('span'); fill.className = 'odds-fill'; fill.style.width = Math.max(2, shown * 100) + '%';
       bar.appendChild(fill);
       if (sim) {
+        var b = currentBaseOdds[code] || 0;
         var tick = document.createElement('span'); tick.className = 'odds-tick';
         tick.style.left = Math.max(0, Math.min(100, b * 100)) + '%';
         tick.title = 'Elo model: ' + pct(b);
@@ -364,7 +494,7 @@
       li.appendChild(img); li.appendChild(name); li.appendChild(bar); li.appendChild(val);
 
       if (sim) {
-        var d = s - b;
+        var s = currentScenarioOdds[code] || 0, bb = currentBaseOdds[code] || 0, d = s - bb;
         var delta = document.createElement('span');
         delta.className = 'odds-delta ' + (d > 0.005 ? 'up' : (d < -0.005 ? 'down' : 'flat'));
         delta.textContent = Math.abs(d) < 0.005 ? '' : (d > 0 ? '+' : '−') + Math.round(Math.abs(d) * 100);
@@ -394,7 +524,7 @@
     var wrap = document.getElementById('live-status');
     var label = document.getElementById('live-label');
     if (wrap) wrap.className = 'live-status ' + (isLive ? 'on' : 'off');
-    if (wrap) wrap.title = isLive ? 'Live data, auto-updating' : 'Live feed unavailable — showing a saved snapshot';
+    if (wrap) wrap.title = isLive ? 'Live data, auto-updating' : 'Live feed unavailable, showing a saved snapshot';
     if (label) label.textContent = isLive ? 'LIVE' : 'OFFLINE';
 
     // Internal integrity check kept in the console only (not user-facing).
@@ -454,9 +584,28 @@
 
   // ---- Boot + auto-refresh --------------------------------------------------
   function cycle() {
-    loadMatches().then(function (res) {
-      lastMatches = res.matches; lastSource = res.source;
+    Promise.all([loadMatches(), loadMarket()]).then(function (arr) {
+      var m = arr[0], mk = arr[1];
+      lastMatches = m.matches; lastSource = m.source;
+      if (mk) {
+        currentMarketOdds = marketByTla(mk.odds);
+        currentMarketElim = marketElimByTla(mk.eliminated);
+        marketOk = Object.keys(currentMarketOdds).length > 0;
+        marketFetchedAt = mk.fetchedAt;
+      } else {
+        currentMarketOdds = {}; currentMarketElim = {}; marketOk = false; marketFetchedAt = null;
+      }
       rerender();
+
+      // Pass 2: per-match pills for the current round's ties. Fetch each tie
+      // team's stage-of-elimination data, then rerender so qualifying pills read
+      // from the market. Live mode only. On any failure every pill stays on Elo.
+      var names = (mode === 'live') ? qualifyingTieTeams() : [];
+      loadMatchOdds(names).then(function (mo) {
+        currentMatchOdds = mo;
+        if (mo && DEBUG_TIES) logTies();
+        rerender();
+      });
     });
   }
   // ---- Share (copy link) ----------------------------------------------------

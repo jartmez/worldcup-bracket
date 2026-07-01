@@ -108,6 +108,23 @@
     '1st J', '2nd H', '2nd D', '2nd G', '1st B', '3rd J', '1st K', '3rd L'
   ];
 
+  // FIFA name -> Polymarket name. Only the mismatches need an entry; every other
+  // team resolves by identity. The first four were verified live against the
+  // world-cup-winner event; "Cote d'Ivoire" is from the brief (Ivory Coast was
+  // not in that live event to confirm directly). Extras cover teams not in the
+  // current bracket so a later pass can reuse the map.
+  var PM_NAME = {
+    'United States': 'USA',
+    'Bosnia & Herzegovina': 'Bosnia-Herzegovina',
+    'DR Congo': 'Congo DR',
+    "Cote d'Ivoire": 'Ivory Coast',
+    'Turkiye': 'Turkey',
+    'Korea Republic': 'South Korea',
+    'IR Iran': 'Iran'
+  };
+  // Resolve a bracket team's FIFA name to its Polymarket name (identity if none).
+  function polyName(fifaName) { return (fifaName && PM_NAME[fifaName]) || fifaName; }
+
   // circle-flags via jsDelivr CDN (already circular SVGs with transparent corners).
   function flagUrl(iso) {
     return 'https://cdn.jsdelivr.net/gh/HatScripts/circle-flags/flags/' + iso + '.svg';
@@ -136,7 +153,7 @@
 
   var api = {
     FIFA: FIFA, PLACEHOLDER: PLACEHOLDER, R32_PROVENANCE: R32_PROVENANCE, flagUrl: flagUrl,
-    teamByFifa: teamByFifa, resolveTeam: resolveTeam
+    teamByFifa: teamByFifa, resolveTeam: resolveTeam, PM_NAME: PM_NAME, polyName: polyName
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   global.TeamData = api;

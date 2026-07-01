@@ -337,6 +337,9 @@ body {
   pointer-events: none;
 }
 .mlabel:hover .mlabel-bg { stroke: var(--accent); }
+/* Market-derived pill: subtle accent edge so it reads apart from the Elo pills */
+.mlabel.market .mlabel-bg { stroke: var(--accent); stroke-opacity: 0.55; }
+.mlabel.market:hover .mlabel-bg { stroke-opacity: 1; }
 
 /* Kickoff date + time beneath a matchup pill */
 .mkick {
