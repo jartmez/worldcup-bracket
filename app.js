@@ -51,6 +51,8 @@
   var currentMarketOdds = {};         // tla -> Polymarket title probability
   var currentMarketElim = {};         // tla -> true if Polymarket resolved it out
   var currentMatchOdds = null;        // Polymarket name -> per-team stage-of-elimination data
+  var liveEloBase = {};               // live Elo title odds, frozen while in Simulate
+  var livePolyBase = {};              // live Polymarket title odds, frozen while in Simulate
   var marketOk = false;               // Polymarket odds available and usable
   var marketFetchedAt = null;
   var currentElim = {};               // tla -> true if the team has lost a REAL match
@@ -490,68 +492,90 @@
   }
 
   function renderOdds() {
-    var list = document.getElementById('odds-list');
-    if (!list) return;
+    var host = document.getElementById('odds-tables');
+    if (!host) return;
     var sim = mode === 'sim';
-    var useMarket = !sim && marketOk;
 
     var h2 = document.querySelector('#odds-panel h2');
     if (h2) h2.textContent = sim ? 'Title odds · Sim' : 'Title odds';
-    var note = document.querySelector('#odds-panel .odds-note');
-    if (note) {
-      if (sim) note.textContent = 'Gold = your picks, muted = Elo model';
-      else if (useMarket) note.innerHTML = markHtml('poly', 12) + ' Poly live';
-      else note.innerHTML = markHtml('elo', 12) + ' Elo model (fallback)';
+
+    // Capture the live baselines; they freeze the moment we enter Simulate so only
+    // the scenario moves. Poly baseline excludes teams the market resolved out.
+    if (!sim) {
+      liveEloBase = {};
+      Object.keys(currentBaseOdds).forEach(function (c) { liveEloBase[c] = currentBaseOdds[c]; });
+      livePolyBase = {};
+      if (marketOk) Object.keys(currentMarketOdds).forEach(function (c) {
+        if (!currentMarketElim[c]) livePolyBase[c] = currentMarketOdds[c];
+      });
     }
-    // The source legend explains the markers; show it only in live mode.
+
+    var order = rankCodes(sim);
     var legend = document.getElementById('odds-legend');
-    if (legend) legend.style.display = sim ? 'none' : 'block';
-    list.className = sim ? 'sim' : '';
-    clear(list);
+    if (legend) legend.style.display = 'block';   // legend defines both markers, both tabs
 
-    // Candidate teams: Elo baseline keys plus any market-covered team.
+    clear(host);
+    host.appendChild(oddsTable('poly', 'Poly', order, sim));
+    host.appendChild(oddsTable('elo', 'Elo', order, sim));
+  }
+
+  // One shared team order for both tables so their rows line up. Live ranks by the
+  // Poly baseline (the headline); Simulate ranks by the scenario so a team you push
+  // deep rises into view. Teams without a Poly baseline sink in Live.
+  function rankCodes(sim) {
     var pool = {};
-    Object.keys(currentBaseOdds).forEach(function (c) { pool[c] = 1; });
-    if (useMarket) Object.keys(currentMarketOdds).forEach(function (c) { pool[c] = 1; });
-    if (sim) { pool = {}; Object.keys(currentScenarioOdds).forEach(function (c) { pool[c] = 1; }); }
+    Object.keys(liveEloBase).forEach(function (c) { pool[c] = 1; });
+    Object.keys(livePolyBase).forEach(function (c) { pool[c] = 1; });
+    if (sim) Object.keys(currentScenarioOdds).forEach(function (c) { pool[c] = 1; });
+    function keyOf(c) {
+      if (sim) return currentScenarioOdds[c] || 0;
+      return (livePolyBase[c] != null) ? livePolyBase[c] : ((liveEloBase[c] || 0) - 1);
+    }
+    return Object.keys(pool)
+      .filter(function (c) { return ((sim ? currentScenarioOdds[c] : 0) || liveEloBase[c] || livePolyBase[c] || 0) >= 0.001; })
+      .sort(function (a, b) { return keyOf(b) - keyOf(a); })
+      .slice(0, 11);
+  }
 
-    var ranked = Object.keys(pool)
-      .filter(function (c) { return dispOdds(c, sim, useMarket) >= 0.001; })
-      .sort(function (a, b) { return dispOdds(b, sim, useMarket) - dispOdds(a, sim, useMarket); })
-      .slice(0, 12);
-
-    ranked.forEach(function (code) {
-      var shown = dispOdds(code, sim, useMarket);
+  // Build one title-odds table. Live: flag, team, baseline %. Simulate: adds a delta
+  // column (scenario minus this table's frozen baseline). Blank delta, never 0, when
+  // the team has no baseline in this source.
+  function oddsTable(kind, label, order, sim) {
+    var base = (kind === 'poly') ? livePolyBase : liveEloBase;
+    var wrap = document.createElement('div');
+    wrap.className = 'otbl otbl-' + kind + (sim ? ' sim' : '');
+    var head = document.createElement('div');
+    head.className = 'otbl-head';
+    head.innerHTML = markHtml(kind, 13) + ' <b>' + label + '</b>' + (sim ? ' <span class="otbl-sub">Δ vs your sim</span>' : '');
+    wrap.appendChild(head);
+    order.forEach(function (code) {
       var ref = TeamData.FIFA[code];
-      var li = document.createElement('li');
-
+      var row = document.createElement('div');
+      row.className = 'otbl-row';
       var img = document.createElement('img');
       img.className = 'odds-flag'; img.src = ref ? TeamData.flagUrl(ref.iso) : ''; img.alt = code;
       var name = document.createElement('span'); name.className = 'odds-code'; name.textContent = code;
-
-      var bar = document.createElement('span'); bar.className = 'odds-bar';
-      var fill = document.createElement('span'); fill.className = 'odds-fill'; fill.style.width = Math.max(2, shown * 100) + '%';
-      bar.appendChild(fill);
+      var pc = document.createElement('span'); pc.className = 'otbl-pct';
+      var bv = base[code];
+      if (bv == null) { pc.textContent = '·'; pc.classList.add('none'); }
+      else pc.textContent = pct(bv);
+      row.appendChild(img); row.appendChild(name); row.appendChild(pc);
       if (sim) {
-        var b = currentBaseOdds[code] || 0;
-        var tick = document.createElement('span'); tick.className = 'odds-tick';
-        tick.style.left = Math.max(0, Math.min(100, b * 100)) + '%';
-        tick.title = 'Elo model: ' + pct(b);
-        bar.appendChild(tick);
+        var dcell = document.createElement('span'); dcell.className = 'otbl-delta';
+        // Blank the delta for absent baselines and for sub-1% baselines, where a
+        // small point move is just noise; the baseline % still shows.
+        if (bv == null || bv < 0.01) {
+          dcell.classList.add('blank');
+        } else {
+          var dp = Math.round(((currentScenarioOdds[code] || 0) - bv) * 100);
+          dcell.classList.add(dp > 0 ? 'up' : (dp < 0 ? 'down' : 'zero'));
+          dcell.textContent = dp === 0 ? '0' : (dp > 0 ? '+' : '−') + Math.abs(dp);
+        }
+        row.appendChild(dcell);
       }
-
-      var val = document.createElement('span'); val.className = 'odds-val'; val.textContent = pct(shown);
-      li.appendChild(img); li.appendChild(name); li.appendChild(bar); li.appendChild(val);
-
-      if (sim) {
-        var s = currentScenarioOdds[code] || 0, bb = currentBaseOdds[code] || 0, d = s - bb;
-        var delta = document.createElement('span');
-        delta.className = 'odds-delta ' + (d > 0.005 ? 'up' : (d < -0.005 ? 'down' : 'flat'));
-        delta.textContent = Math.abs(d) < 0.005 ? '' : (d > 0 ? '+' : '−') + Math.round(Math.abs(d) * 100);
-        li.appendChild(delta);
-      }
-      list.appendChild(li);
+      wrap.appendChild(row);
     });
+    return wrap;
   }
 
   function updateBadges(model, source) {
@@ -623,7 +647,9 @@
     var lb = document.getElementById('mode-live'), sb = document.getElementById('mode-sim');
     if (lb) { lb.classList.toggle('active', m === 'live'); lb.setAttribute('aria-selected', m === 'live'); }
     if (sb) { sb.classList.toggle('active', m === 'sim'); sb.setAttribute('aria-selected', m === 'sim'); }
-    rerender();
+    // Returning to Live re-fetches live state so market odds and pills reactivate
+    // (the market never prices your sim bracket). Entering Simulate just rerenders.
+    if (m === 'live') cycle(); else rerender();
   }
   function wireSimControls() {
     var lb = document.getElementById('mode-live'), sb = document.getElementById('mode-sim');
@@ -648,15 +674,16 @@
       }
       rerender();
 
-      // Pass 2: per-match pills for the current round's ties. Fetch each tie
-      // team's stage-of-elimination data, then rerender so qualifying pills read
-      // from the market. Live mode only. On any failure every pill stays on Elo.
-      var names = (mode === 'live') ? qualifyingTieTeams() : [];
-      loadMatchOdds(names).then(function (mo) {
-        currentMatchOdds = mo;
-        if (mo && DEBUG_TIES) logTies();
-        rerender();
-      });
+      // Pass 2: per-match pills for the current round's ties. Live mode only. In
+      // Simulate we leave currentMatchOdds intact (do not null it) so returning to
+      // Live keeps the market pills without waiting for the next refresh.
+      if (mode === 'live') {
+        loadMatchOdds(qualifyingTieTeams()).then(function (mo) {
+          currentMatchOdds = mo;
+          if (mo && DEBUG_TIES) logTies();
+          rerender();
+        });
+      }
     });
   }
   // ---- Share (copy link) ----------------------------------------------------

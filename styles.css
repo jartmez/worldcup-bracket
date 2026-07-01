@@ -251,6 +251,30 @@ body {
 .odds-delta.down { color: #ff6b6b; }
 .odds-delta.flat { color: transparent; }
 
+/* Title-odds tables: Poly stacked on Elo, same team order so rows line up. */
+#odds-tables { margin-top: 6px; }
+.otbl + .otbl { margin-top: 12px; }
+.otbl-head {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; letter-spacing: 0.4px; text-transform: uppercase;
+  color: var(--muted); margin: 0 0 5px;
+}
+.otbl-head b { color: var(--text); font-weight: 700; }
+.otbl-head .otbl-sub { margin-left: auto; text-transform: none; letter-spacing: 0; font-size: 10px; }
+.otbl-row {
+  display: grid;
+  grid-template-columns: 18px 34px 1fr;
+  align-items: center; gap: 7px; margin: 4px 0;
+}
+.otbl.sim .otbl-row { grid-template-columns: 18px 34px 1fr 42px; }
+.otbl-pct { font-size: 12.5px; font-weight: 500; color: var(--text); text-align: right; font-variant-numeric: tabular-nums; }
+.otbl-pct.none { color: var(--muted); }
+.otbl-delta { font-size: 11.5px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+.otbl-delta.up { color: var(--accent); }
+.otbl-delta.down { color: #ff6b6b; }
+.otbl-delta.zero { color: var(--muted); }
+.otbl-delta.blank { color: transparent; }
+
 /* Source legend: the one place the full source words live */
 .odds-legend {
   margin-top: 11px;
@@ -363,6 +387,9 @@ body {
 /* Market-derived pill: subtle accent edge so it reads apart from the Elo pills */
 .mlabel.market .mlabel-bg { stroke: var(--accent); stroke-opacity: 0.55; }
 .mlabel.market:hover .mlabel-bg { stroke-opacity: 1; }
+/* Model (Elo) pills: gold border, same weight and radius as the green market one. */
+.mlabel:not(.market) .mlabel-bg { stroke: var(--gold); stroke-opacity: 0.55; }
+.mlabel:not(.market):hover .mlabel-bg { stroke-opacity: 1; }
 /* Whole market pill is a link to that team's exit-round market */
 a:has(> .mlabel.market) { cursor: pointer; }
 
