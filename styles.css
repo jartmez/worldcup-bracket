@@ -251,6 +251,29 @@ body {
 .odds-delta.down { color: #ff6b6b; }
 .odds-delta.flat { color: transparent; }
 
+/* Source legend: the one place the full source words live */
+.odds-legend {
+  margin-top: 11px;
+  padding-top: 9px;
+  border-top: 1px solid var(--line-soft);
+}
+.odds-legend .lg-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--muted);
+  margin: 3px 0;
+}
+.odds-legend .lg-row b { color: var(--code); font-weight: 700; }
+.odds-legend .lg-mk { flex: 0 0 auto; }
+.odds-legend .lg-note {
+  margin: 7px 0 0;
+  font-size: 10px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
 /* Credit line inside the title-odds panel (By · handle · GitHub, one row) */
 .credit {
   display: flex;
@@ -340,18 +363,27 @@ body {
 /* Market-derived pill: subtle accent edge so it reads apart from the Elo pills */
 .mlabel.market .mlabel-bg { stroke: var(--accent); stroke-opacity: 0.55; }
 .mlabel.market:hover .mlabel-bg { stroke-opacity: 1; }
+/* Whole market pill is a link to that team's exit-round market */
+a:has(> .mlabel.market) { cursor: pointer; }
 
-/* Kickoff date + time beneath a matchup pill */
+/* Source markers on the pill face (candlestick = Poly, bell curve = Elo) */
+.mk { pointer-events: none; }
+.mk-poly .mk-stroke { stroke: #2ee6a6; stroke-width: 1.7; }
+.mk-poly .mk-fill { fill: #2ee6a6; }
+.mk-elo .mk-stroke { stroke: #e0b04d; stroke-width: 1.7; stroke-linecap: round; }
+
+/* Kickoff date + time (24h) beneath a matchup pill. Off-white and a step larger
+   than before, but still one visual step below the pill % so it does not dominate. */
 .mkick {
-  fill: var(--muted);
-  font-size: 8.5px;
-  font-weight: 500;
+  fill: #d7dce4;
+  font-size: 10.5px;
+  font-weight: 600;
   text-anchor: middle;
   dominant-baseline: central;
   pointer-events: none;
   paint-order: stroke;
   stroke: rgba(8, 11, 15, 0.85);
-  stroke-width: 2.4px;
+  stroke-width: 2.6px;
   stroke-linejoin: round;
 }
 

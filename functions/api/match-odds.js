@@ -45,7 +45,8 @@ function slugify(name) {
 
 async function fetchTeam(name) {
   try {
-    const r = await fetch(GAMMA + slugify(name), { headers: { Accept: 'application/json' } });
+    const slug = slugify(name);
+    const r = await fetch(GAMMA + slug, { headers: { Accept: 'application/json' } });
     if (!r.ok) return null;
     const evs = await r.json();
     const ev = Array.isArray(evs) ? evs[0] : evs;
@@ -62,6 +63,8 @@ async function fetchTeam(name) {
       team: name,
       liquidity: ev.liquidity != null ? Number(ev.liquidity) : null,
       volume: ev.volume != null ? Number(ev.volume) : null,
+      // Public event page for the front end to link the liquidity figure to.
+      url: 'https://polymarket.com/event/' + slug,
       rounds: rounds
     };
   } catch (e) {

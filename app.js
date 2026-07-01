@@ -23,6 +23,27 @@
   // Per-tie derivation logs are silent by default; append ?debugTies to the URL to see them.
   var DEBUG_TIES = /[?&]debugTies\b/.test((typeof location !== 'undefined' && location.search) || '');
 
+  // Source markers, defined once and used identically on the pills, in the hover
+  // text and in the panel legend so they map. Candlestick = live market (Poly),
+  // bell curve = model estimate (Elo). Distinguished by SHAPE (colourblind-safe);
+  // colours are inlined so they render the same in the SVG bracket and in HTML.
+  var MK_POLY_COL = '#2ee6a6', MK_ELO_COL = '#e0b04d';
+  var MK_POLY = '<svg width="{s}" height="{s}" viewBox="0 0 16 16" style="vertical-align:-2px"><line x1="8" y1="2" x2="8" y2="14" stroke="' + MK_POLY_COL + '" stroke-width="1.7"/><rect x="4.3" y="5.5" width="7.4" height="6" rx="1" fill="' + MK_POLY_COL + '"/></svg>';
+  var MK_ELO = '<svg width="{s}" height="{s}" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M2 13.5 C5 13.5 5 4 8 4 C11 4 11 13.5 14 13.5" fill="none" stroke="' + MK_ELO_COL + '" stroke-width="1.7" stroke-linecap="round"/></svg>';
+  function markHtml(kind, px) { return (kind === 'poly' ? MK_POLY : MK_ELO).replace(/\{s\}/g, px); }
+  // SVG marker element for a pill face, scaled from the 16x16 art to `size` px.
+  function markerGlyph(kind, x, cy, size) {
+    var g = el('g', { class: 'mk mk-' + kind, transform: 'translate(' + x + ',' + (cy - size / 2) + ') scale(' + (size / 16) + ')' });
+    if (kind === 'poly') {
+      g.appendChild(el('line', { x1: 8, y1: 2, x2: 8, y2: 14, class: 'mk-stroke' }));
+      g.appendChild(el('rect', { x: 4.3, y: 5.5, width: 7.4, height: 6, rx: 1, class: 'mk-fill' }));
+    } else {
+      g.appendChild(el('path', { d: 'M2 13.5 C5 13.5 5 4 8 4 C11 4 11 13.5 14 13.5', class: 'mk-stroke', fill: 'none' }));
+    }
+    return g;
+  }
+  function fmtLiq(liq) { return liq == null ? null : '$' + Math.round(liq / 1000) + 'k'; }
+
   var clipSeq = 0;
   var currentOdds = {};               // tla -> displayed probability (scenario in sim, baseline in live)
   var currentBaseOdds = {};           // pure Elo model: real results + Elo
@@ -329,21 +350,25 @@
       return team.name + ' · title ' + sTxt + ' (Elo ' + bTxt + ')';
     }
     if (marketOk) {
-      if (currentMarketElim[team.code]) return team.name + ' · out (Polymarket)';
+      if (currentMarketElim[team.code]) return team.name + ' · out';
       var mo = currentMarketOdds[team.code];
-      if (mo != null) return team.name + ' · title ' + pct(mo) + ' (Polymarket)';
+      if (mo != null) return team.name + ' · title ' + pct(mo);
       var eb = currentBaseOdds[team.code];
-      return team.name + ' · title ' + ((eb == null || eb < 0.001) ? '<0.1%' : pct(eb)) + ' (Elo)';
+      return team.name + ' · title ' + ((eb == null || eb < 0.001) ? '<0.1%' : pct(eb));
     }
     var o = currentBaseOdds[team.code];
     if (o == null || o < 0.001) return team.name + ' · title <0.1%';
-    return team.name + ' · title ' + pct(o) + ' (Elo)';
+    return team.name + ' · title ' + pct(o);
   }
 
   // Kickoff helpers (viewer's local timezone).
+  // 24-hour clock in the viewer's own zone (unchanged), only the format differs.
+  // getHours maps 12:xx AM to 00 and keeps 12:xx PM at 12, per the brief.
   function kickShort(iso) {
     var d = new Date(iso);
-    return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    var mon = d.toLocaleString(undefined, { month: 'short' });
+    var h = d.getHours(), m = d.getMinutes();
+    return mon + ' ' + d.getDate() + ', ' + (h < 10 ? '0' + h : h) + ':' + (m < 10 ? '0' + m : m);
   }
   function isToday(iso) {
     var d = new Date(iso), n = new Date();
@@ -356,21 +381,30 @@
   function matchLabel(n) {
     var md = marketDerive(n);
     var market = md.ok;
-    var pa = market ? md.a : Sim.eloProb(rate(n.teamA.code), rate(n.teamB.code));
+    var eloA = Sim.eloProb(rate(n.teamA.code), rate(n.teamB.code));
+    var pa = market ? md.a : eloA;
     var favA = pa >= 0.5;
     var fav = favA ? n.teamA : n.teamB;
     var favP = Math.round((favA ? pa : 1 - pa) * 100);
+    var kind = market ? 'poly' : 'elo';
     var txt = fav.code + ' ' + favP + '%';
-    var w = txt.length * 6.9 + 13, h = 17.5;
+
+    // Pill = marker glyph, then favourite + %. Widened to fit the marker.
+    var markerW = 12, gap = 3, pad = 8, h = 17.5;
+    var textW = txt.length * 6.9;
+    var contentW = markerW + gap + textW;
+    var w = contentW + pad * 2;
+    var contentLeft = n.x - contentW / 2;
     var g = el('g', { class: 'mlabel' + (market ? ' market' : '') });
     g.appendChild(el('rect', { x: n.x - w / 2, y: n.y - h / 2, width: w, height: h, rx: 6.5, class: 'mlabel-bg' }));
-    var t = el('text', { x: n.x, y: n.y, class: 'mlabel-txt' });
+    g.appendChild(markerGlyph(kind, contentLeft, n.y, markerW));
+    var t = el('text', { x: contentLeft + markerW + gap + textW / 2, y: n.y, class: 'mlabel-txt' });
     t.textContent = txt;
     g.appendChild(t);
 
     // Kickoff date + time beneath the pill.
     if (n.kickoff) {
-      var k = el('text', { x: n.x, y: n.y + h / 2 + 8.5, class: 'mkick' });
+      var k = el('text', { x: n.x, y: n.y + h / 2 + 9.5, class: 'mkick' });
       k.textContent = kickShort(n.kickoff);
       g.appendChild(k);
     }
@@ -383,35 +417,46 @@
       var badge = el('g', { class: 'mmark ' + (live ? 'live' : 'today') });
       var my = n.y - h / 2 - 9;
       var label = live ? 'LIVE' : 'TODAY';
-      var padL = 8, dotR = 2.3, gap = 6, padR = 9;
+      var padL = 8, dotR = 2.3, gap2 = 6, padR = 9;
       var tw = label.length * 5.6;
-      var bw = padL + dotR * 2 + gap + tw + padR;
+      var bw = padL + dotR * 2 + gap2 + tw + padR;
       var left = n.x - bw / 2;
       badge.appendChild(el('rect', { x: left, y: my - 7, width: bw, height: 14, rx: 7, class: 'mmark-bg' }));
       badge.appendChild(el('circle', { cx: left + padL + dotR, cy: my, r: dotR, class: 'mmark-dot' }));
-      var mt = el('text', { x: left + padL + dotR * 2 + gap, y: my, class: 'mmark-txt' });
+      var mt = el('text', { x: left + padL + dotR * 2 + gap2, y: my, class: 'mmark-txt' });
       mt.textContent = label;
       badge.appendChild(mt);
       g.appendChild(badge);
     }
 
-    attachTip(g, matchTooltip(n, market ? pa : null));
+    // Hover text uses the legend shorthand, no losing-side %, no source words.
+    if (market) {
+      var favElo = Math.round((favA ? eloA : 1 - eloA) * 100);
+      var ev = currentMatchOdds[polyOf(fav)] || {};
+      var liq = fmtLiq(ev.liquidity);
+      var tip = markHtml('poly', 13) + ' ' + favP + '% · ' + markHtml('elo', 13) + ' ' + favElo + '%' + (liq ? ' · liq ' + liq : '');
+      attachTip(g, tip, true);
+      // Whole pill opens the favourite's stage-of-elimination market (new tab), so
+      // the liquidity figure stays a plain, non-vanishing label in the tooltip.
+      if (ev.url) {
+        var a = el('a', { target: '_blank', rel: 'noopener' });
+        a.setAttributeNS('http://www.w3.org/1999/xlink', 'href', ev.url);
+        a.setAttribute('href', ev.url);
+        a.appendChild(g);
+        return a;
+      }
+      return g;
+    }
+    attachTip(g, markHtml('elo', 13) + ' ' + favP + '%', true);
     return g;
   }
 
-  function matchTooltip(n, marketPa) {
+  function matchTooltip(n) {
     var a = n.teamA, b = n.teamB;
     var an = a ? a.code : 'TBD', bn = b ? b.code : 'TBD';
     if (n.status === 'FINISHED' && n.scoreLine) {
       var pens = /pens/.test(n.scoreLine) ? '  ·  decided on penalties' : '';
       return an + '  ' + n.scoreLine + '  ' + bn + (n.winner ? '  ➜ ' + n.winner.code + ' won' : '') + pens;
-    }
-    if (a && b) {
-      var market = (marketPa != null);
-      var pa = market ? marketPa : Sim.eloProb(rate(a.code), rate(b.code));
-      var when = n.kickoff ? '  ·  ' + (isLive(n.status) ? 'LIVE now' : kickShort(n.kickoff)) : '';
-      var src = market ? 'Polymarket-derived' : 'Elo model estimate';
-      return an + ' ' + Math.round(pa * 100) + '%  v  ' + Math.round((1 - pa) * 100) + '% ' + bn + when + '  (' + src + ')';
     }
     return an + ' v ' + bn;
   }
@@ -453,9 +498,14 @@
     var h2 = document.querySelector('#odds-panel h2');
     if (h2) h2.textContent = sim ? 'Title odds · Sim' : 'Title odds';
     var note = document.querySelector('#odds-panel .odds-note');
-    if (note) note.textContent = sim
-      ? 'Gold = your picks, muted = Elo model'
-      : (useMarket ? 'Polymarket live market' : 'Elo model estimate (fallback)');
+    if (note) {
+      if (sim) note.textContent = 'Gold = your picks, muted = Elo model';
+      else if (useMarket) note.innerHTML = markHtml('poly', 12) + ' Poly live';
+      else note.innerHTML = markHtml('elo', 12) + ' Elo model (fallback)';
+    }
+    // The source legend explains the markers; show it only in live mode.
+    var legend = document.getElementById('odds-legend');
+    if (legend) legend.style.display = sim ? 'none' : 'block';
     list.className = sim ? 'sim' : '';
     clear(list);
 
@@ -540,14 +590,15 @@
   // ---- Tooltip --------------------------------------------------------------
   var tip = null;
   function getTip() { return tip || (tip = document.getElementById('tooltip')); }
-  function attachTip(node, text) {
-    node.addEventListener('mouseenter', function (ev) { showTip(text, ev); });
+  function attachTip(node, content, isHtml) {
+    node.addEventListener('mouseenter', function (ev) { showTip(content, ev, isHtml); });
     node.addEventListener('mousemove', moveTip);
     node.addEventListener('mouseleave', hideTip);
-    node.addEventListener('focus', function () { var t = getTip(); t.textContent = text; t.hidden = false; });
+    node.addEventListener('focus', function () { var t = getTip(); setTip(t, content, isHtml); t.hidden = false; });
     node.addEventListener('blur', hideTip);
   }
-  function showTip(text, ev) { var t = getTip(); t.textContent = text; t.hidden = false; moveTip(ev); }
+  function setTip(t, content, isHtml) { if (isHtml) t.innerHTML = content; else t.textContent = content; }
+  function showTip(content, ev, isHtml) { var t = getTip(); setTip(t, content, isHtml); t.hidden = false; moveTip(ev); }
   function moveTip(ev) { var t = getTip(); t.style.left = (ev.clientX + 12) + 'px'; t.style.top = (ev.clientY - 28) + 'px'; }
   function hideTip() { getTip().hidden = true; }
 

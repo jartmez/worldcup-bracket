@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>2026 World Cup — Radial Knockout Bracket</title>
+  <title>2026 World Cup Knockouts</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="alternate icon" type="image/png" href="favicon.png">
   <meta name="theme-color" content="#0b0d10">
@@ -55,6 +55,17 @@
       <h2>Title odds</h2>
       <p class="odds-note">Loading odds…</p>
       <ol id="odds-list"></ol>
+      <div id="odds-legend" class="odds-legend" style="display:none">
+        <div class="lg-row">
+          <svg class="lg-mk" width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><line x1="8" y1="2" x2="8" y2="14" stroke="#2ee6a6" stroke-width="1.7"/><rect x="4.3" y="5.5" width="7.4" height="6" rx="1" fill="#2ee6a6"/></svg>
+          <span><b>Poly</b> live market odds</span>
+        </div>
+        <div class="lg-row">
+          <svg class="lg-mk" width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 13.5 C5 13.5 5 4 8 4 C11 4 11 13.5 14 13.5" fill="none" stroke="#e0b04d" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <span><b>Elo</b> model estimate (fallback)</span>
+        </div>
+        <p class="lg-note">Match % is derived from each team's Polymarket exit-round prices, not a direct head-to-head market.</p>
+      </div>
     </aside>
 
     <svg id="bracket" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet"
