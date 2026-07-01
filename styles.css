@@ -1,55 +1,151 @@
 :root {
-  --bg: #0e0f12;
-  --panel: #141519;
-  --line: #3a3d44;
-  --line-soft: #2a2c31;
-  --disc: #1c1e24;
-  --disc-stroke: #4a4e57;
-  --code: #c9ccd3;
-  --accent: #2dd4a7;
-  --text: #e7e9ee;
-  --muted: #9aa0ac;
+  --bg: #0b0d10;
+  --panel: #151a21;
+  --line: #c2c9d5;          /* light grey-white connectors (teal stays distinct) */
+  --line-soft: #2b2f37;
+  --disc: #1b1f27;
+  --disc-stroke: #d3d8e2;   /* brighter node rings */
+  --code: #eef0f4;
+  --accent: #2ee6a6;
+  --accent-dim: rgba(46, 230, 166, 0.4);
+  --gold: #f5c451;
+  --text: #eef1f6;
+  --muted: #9aa3b2;
+  --font: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 * { box-sizing: border-box; }
 
 html, body {
   margin: 0;
-  background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* SVG text inherits the app font too (codes, pills, fallbacks, trophy). */
+#bracket text { font-family: var(--font); }
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(1100px 820px at 50% 40%, #17222e 0%, #0e141b 48%, #0b0d10 78%),
+    #0b0d10;
+  background-attachment: fixed;
 }
 
 .topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 14px 20px;
-  border-bottom: 1px solid var(--line-soft);
+  gap: 14px 22px;
+  padding: 18px 24px 6px;
   flex-wrap: wrap;
 }
 
-.topbar h1 {
-  font-size: 16px;
-  font-weight: 600;
+.title {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
   margin: 0;
-  letter-spacing: 0.2px;
+  line-height: 1;
+}
+.title-main {
+  font-size: 23px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  color: #ffffff;
+}
+.title-main .yr { color: var(--gold); }
+.title-sub {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 3.5px;
+  color: var(--gold);
 }
 
-.badges { display: flex; gap: 8px; flex-wrap: wrap; }
-.badge {
+.brand { display: flex; flex-direction: column; gap: 9px; }
+.header-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
   font-size: 12px;
-  color: var(--muted);
+}
+.live-status { display: inline-flex; align-items: center; gap: 6px; }
+.live-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.live-status.on .live-dot {
+  background: var(--accent);
+  box-shadow: 0 0 7px rgba(46, 230, 166, 0.75);
+  animation: livepulse 1.6s ease-in-out infinite;
+}
+.live-status.off .live-dot { background: #d0a54a; }
+.live-label { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; }
+.live-status.on .live-label { color: var(--accent); }
+.live-status.off .live-label { color: #d0a54a; }
+.meta-dot { color: var(--muted); }
+.header-meta .credit { margin: 0; }
+
+.badges { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* Compact progress-bar stat widgets */
+.stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   border: 1px solid var(--line-soft);
   border-radius: 999px;
-  padding: 4px 12px;
+  padding: 5px 13px;
   white-space: nowrap;
 }
-.badge.ok { color: var(--accent); border-color: rgba(45, 212, 167, 0.4); }
-.badge.bad { color: #ff6b6b; border-color: rgba(255, 107, 107, 0.5); }
-.badge.soft { color: var(--muted); }
+.stat-bar {
+  width: 54px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--line-soft);
+  overflow: hidden;
+}
+.stat-fill {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 3px;
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+.stat-txt {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.stat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex: none;
+}
+.stat-dot.ok { background: var(--accent); box-shadow: 0 0 6px rgba(46, 230, 166, 0.6); }
+.stat-dot.bad { background: #ff5a5a; box-shadow: 0 0 6px rgba(255, 90, 90, 0.6); }
+
+.share-btn {
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  color: #0b0d10;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 5px 15px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.06s ease;
+  white-space: nowrap;
+}
+.share-btn:hover { background: #4bf0bb; }
+.share-btn:active { transform: translateY(1px); }
+.share-btn.copied { background: var(--gold); border-color: var(--gold); }
 
 .stage {
   position: relative;
@@ -59,45 +155,76 @@ html, body {
   padding: 12px;
 }
 
-/* Title-odds panel */
+/* Title-odds panel (top-right on desktop; below the bracket on mobile) */
 #odds-panel {
   position: absolute;
   top: 18px;
-  left: 18px;
-  width: 188px;
+  right: 18px;
+  width: 205px;
   background: rgba(20, 21, 25, 0.82);
   border: 1px solid var(--line-soft);
   border-radius: 10px;
-  padding: 11px 12px;
+  padding: 12px 14px;
   backdrop-filter: blur(4px);
   z-index: 5;
 }
 #odds-panel h2 {
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 700;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.4px;
   margin: 0;
   text-transform: uppercase;
   color: var(--text);
 }
-.odds-note { font-size: 10px; color: var(--muted); margin: 2px 0 9px; }
+.odds-note { font-size: 11px; color: var(--muted); margin: 3px 0 10px; }
 #odds-list { list-style: none; margin: 0; padding: 0; }
 #odds-list li {
   display: grid;
-  grid-template-columns: 16px 30px 1fr 34px;
+  grid-template-columns: 18px 32px 1fr 36px;
   align-items: center;
-  gap: 6px;
-  margin: 5px 0;
+  gap: 7px;
+  margin: 6px 0;
 }
-.odds-flag { width: 16px; height: 16px; border-radius: 50%; object-fit: cover; }
-.odds-code { font-size: 11px; font-weight: 700; color: var(--code); }
+.odds-flag { width: 18px; height: 18px; border-radius: 50%; object-fit: cover; }
+.odds-code { font-size: 12.5px; font-weight: 700; color: var(--code); }
 .odds-bar { height: 5px; background: var(--line-soft); border-radius: 3px; overflow: hidden; }
 .odds-fill { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
-.odds-val { font-size: 11px; color: var(--text); text-align: right; font-variant-numeric: tabular-nums; }
+.odds-val { font-size: 12.5px; font-weight: 500; color: var(--text); text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Credit line inside the title-odds panel (By · handle · GitHub, one row) */
+.credit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 0 1px;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--muted);
+}
+.credit a {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+.credit a:first-of-type { color: var(--text); font-weight: 600; }
+.credit a:hover { color: var(--accent); }
+.credit .arw { font-size: 10px; line-height: 1; }
+.credit-gh svg { display: block; }
 
 @media (max-width: 720px) {
-  #odds-panel { position: static; width: auto; margin-bottom: 10px; backdrop-filter: none; }
-  .stage { flex-direction: column; }
+  .stage { flex-direction: column; align-items: center; }
+  /* Bracket first, odds table below it (reordered without touching the DOM). */
+  #bracket { order: 1; }
+  #odds-panel {
+    position: static;
+    order: 2;
+    width: min(360px, 100%);
+    margin: 14px auto 0;
+    backdrop-filter: none;
+  }
 }
 
 #bracket {
@@ -110,11 +237,17 @@ html, body {
 .connector {
   fill: none;
   stroke: var(--line);
-  stroke-width: 1.4;
+  stroke-width: 1.5;
+  stroke-opacity: 0.9;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.connector.win { stroke: var(--accent); stroke-width: 2.2; }
+.connector.win {
+  stroke: var(--accent);
+  stroke-opacity: 1;
+  stroke-width: 2.8;
+  filter: drop-shadow(0 0 4px var(--accent-dim));
+}
 .matchpt { fill: var(--line); }
 .matchpt.done { fill: var(--accent); }
 .matchpt:hover { fill: #fff; cursor: help; }
@@ -129,28 +262,77 @@ html, body {
 }
 .mlabel-txt {
   fill: var(--text);
-  font-size: 8.5px;
-  font-weight: 700;
+  font-size: 11.5px;
+  font-weight: 600;
   text-anchor: middle;
   dominant-baseline: central;
   pointer-events: none;
 }
 .mlabel:hover .mlabel-bg { stroke: var(--accent); }
 
+/* Kickoff date + time beneath a matchup pill */
+.mkick {
+  fill: var(--muted);
+  font-size: 8.5px;
+  font-weight: 500;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: rgba(8, 11, 15, 0.85);
+  stroke-width: 2.4px;
+  stroke-linejoin: round;
+}
+
+/* LIVE / TODAY marker above a matchup pill */
+.mmark { pointer-events: none; }
+.mmark-bg { fill: #0b0d10; fill-opacity: 0.9; stroke: var(--line-soft); stroke-width: 0.6; }
+.mmark-txt {
+  font-size: 8px; font-weight: 800; letter-spacing: 0.4px;
+  text-anchor: start; dominant-baseline: central;
+}
+.mmark.today .mmark-bg { stroke: rgba(245, 196, 81, 0.5); }
+.mmark.today .mmark-dot { fill: var(--gold); }
+.mmark.today .mmark-txt { fill: var(--gold); }
+.mmark.live .mmark-bg { stroke: rgba(255, 90, 90, 0.55); }
+.mmark.live .mmark-txt { fill: #ff6b6b; }
+.mmark.live .mmark-dot { fill: #ff5a5a; animation: livepulse 1.4s ease-in-out infinite; }
+@keyframes livepulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+/* Group-position provenance under each R32 code */
+.prov {
+  fill: var(--muted);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: rgba(8, 11, 15, 0.85);
+  stroke-width: 2.4px;
+  stroke-linejoin: round;
+}
+
 /* Team nodes */
 .flag-disc {
   fill: var(--disc);
   stroke: none;
 }
-.flag-img { pointer-events: none; }
+/* Lift flags off the dark field and make the colours read brighter. */
+.flag-img {
+  pointer-events: none;
+  filter: saturate(1.12) brightness(1.08);
+}
+.team:not(.ghost) { filter: drop-shadow(0 1.5px 2.5px rgba(0, 0, 0, 0.55)); }
 .flag-ring {
   fill: none;
   stroke: var(--disc-stroke);
-  stroke-width: 1.5;
+  stroke-width: 1.75;
 }
 .flag-fallback {
   fill: var(--code);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.3px;
   text-anchor: middle;
@@ -158,17 +340,26 @@ html, body {
   pointer-events: none;
 }
 .flag-missing .flag-disc { fill: #23262e; }
-.flag-ring.champ { stroke: var(--accent); stroke-width: 2.5; }
-.team.ghost { opacity: 0.3; }
-.team.ghost:hover, .team.ghost:focus { opacity: 0.85; }
+.flag-ring.champ {
+  stroke: var(--gold);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 5px rgba(245, 196, 81, 0.6));
+}
+.team.ghost { opacity: 0.32; }
+.team.ghost:hover, .team.ghost:focus { opacity: 0.9; }
 .code {
   fill: var(--code);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
   text-anchor: middle;
   dominant-baseline: middle;
   pointer-events: none;
+  /* dark halo so codes stay legible over connectors and the gradient */
+  paint-order: stroke;
+  stroke: rgba(8, 11, 15, 0.85);
+  stroke-width: 2.6px;
+  stroke-linejoin: round;
 }
 .team { cursor: default; outline: none; }
 .team:hover .flag-ring,
@@ -177,8 +368,14 @@ html, body {
 .team:focus .code { fill: #fff; }
 
 /* Centre trophy */
-.trophy-bg { fill: var(--panel); stroke: var(--line); stroke-width: 1.5; }
-.trophy { font-size: 30px; text-anchor: middle; dominant-baseline: middle; }
+.trophy-bg {
+  fill: var(--panel);
+  stroke: var(--gold);
+  stroke-width: 1.75;
+  filter: drop-shadow(0 0 8px rgba(245, 196, 81, 0.28));
+}
+.trophy { font-size: 32px; text-anchor: middle; dominant-baseline: middle; }
+.trophy-img { pointer-events: none; filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55)); }
 
 /* Tooltip */
 .tooltip {
@@ -188,15 +385,16 @@ html, body {
   color: #fff;
   border: 1px solid var(--line);
   border-radius: 6px;
-  padding: 4px 9px;
-  font-size: 12px;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-weight: 500;
   pointer-events: none;
   transform: translateY(-2px);
   white-space: nowrap;
 }
 
 @media (max-width: 560px) {
-  .topbar h1 { font-size: 14px; }
-  .badge { font-size: 11px; }
+  .title-main { font-size: 19px; }
+  .title-sub { font-size: 11px; letter-spacing: 3px; }
   #bracket { width: 96vw; }
 }

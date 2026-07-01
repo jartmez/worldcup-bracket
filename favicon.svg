@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Radial bracket mark">
+  <rect width="32" height="32" rx="7" fill="#0b0d10"/>
+  <circle cx="16" cy="16" r="11.5" fill="none" stroke="#242a33" stroke-width="1.4"/>
+  <g stroke="#2ee6a6" stroke-width="1.7" stroke-linecap="round">
+    <line x1="16" y1="16" x2="16" y2="5"/>
+    <line x1="16" y1="16" x2="25.5" y2="10.5"/>
+    <line x1="16" y1="16" x2="25.5" y2="21.5"/>
+    <line x1="16" y1="16" x2="16" y2="27"/>
+    <line x1="16" y1="16" x2="6.5" y2="21.5"/>
+    <line x1="16" y1="16" x2="6.5" y2="10.5"/>
+  </g>
+  <g fill="#7fe9cd">
+    <circle cx="16" cy="5" r="1.5"/>
+    <circle cx="25.5" cy="10.5" r="1.5"/>
+    <circle cx="25.5" cy="21.5" r="1.5"/>
+    <circle cx="16" cy="27" r="1.5"/>
+    <circle cx="6.5" cy="21.5" r="1.5"/>
+    <circle cx="6.5" cy="10.5" r="1.5"/>
+  </g>
+  <circle cx="16" cy="16" r="4" fill="#f5c451"/>
+  <circle cx="16" cy="16" r="4" fill="none" stroke="#0b0d10" stroke-width="1.1"/>
+</svg>

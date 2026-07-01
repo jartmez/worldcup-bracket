@@ -95,6 +95,19 @@
     'ARG', 'CPV', 'AUS', 'EGY', 'SUI', 'ALG', 'COL', 'GHA'
   ];
 
+  // Group-position provenance for each Round-of-32 slot, indexed by leaf order
+  // (same order results.js seeds: the id-sorted R32 matches = FIFA bracket order,
+  // home team then away team). "1st X" = group winner, "2nd X" = runner-up,
+  // "3rd X" = the best-third-placed team that came from group X. Winner/runner-up
+  // slots are fixed by FIFA's published R32 definitions; the third-place groups
+  // are filled from the completed 2026 group stage (which third came from where).
+  var R32_PROVENANCE = [
+    '1st E', '3rd D', '1st I', '3rd F', '2nd A', '2nd B', '1st F', '2nd C',
+    '2nd K', '2nd L', '1st H', '2nd J', '1st D', '3rd B', '1st G', '3rd I',
+    '1st C', '2nd F', '2nd E', '2nd I', '1st A', '3rd E', '1st L', '3rd K',
+    '1st J', '2nd H', '2nd D', '2nd G', '1st B', '3rd J', '1st K', '3rd L'
+  ];
+
   // circle-flags via jsDelivr CDN (already circular SVGs with transparent corners).
   function flagUrl(iso) {
     return 'https://cdn.jsdelivr.net/gh/HatScripts/circle-flags/flags/' + iso + '.svg';
@@ -122,7 +135,7 @@
   }
 
   var api = {
-    FIFA: FIFA, PLACEHOLDER: PLACEHOLDER, flagUrl: flagUrl,
+    FIFA: FIFA, PLACEHOLDER: PLACEHOLDER, R32_PROVENANCE: R32_PROVENANCE, flagUrl: flagUrl,
     teamByFifa: teamByFifa, resolveTeam: resolveTeam
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

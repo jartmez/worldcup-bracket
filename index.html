@@ -4,21 +4,50 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>2026 World Cup — Radial Knockout Bracket</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="alternate icon" type="image/png" href="favicon.png">
+  <meta name="theme-color" content="#0b0d10">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="topbar">
-    <h1>2026 FIFA World Cup — Knockout Bracket</h1>
+    <div class="brand">
+      <h1 class="title">
+        <span class="title-main"><span class="yr">2026</span> WORLD CUP</span>
+        <span class="title-sub">KNOCKOUTS</span>
+      </h1>
+      <div class="header-meta">
+        <span class="live-status on" id="live-status" title="Live data, auto-updating">
+          <span class="live-dot" id="live-dot"></span>
+          <span class="live-label" id="live-label">LIVE</span>
+        </span>
+        <span class="meta-dot" aria-hidden="true">·</span>
+        <span class="credit">By
+          <a href="https://x.com/Kryptyk_Skyptyk" target="_blank" rel="noopener noreferrer">Kryptyk-Skyptyk<span class="arw">↗</span></a>
+          <a class="credit-gh" href="https://github.com/Kryptyk-Skyptyk" target="_blank" rel="noopener noreferrer" aria-label="Kryptyk-Skyptyk on GitHub" title="GitHub"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M12 .5C5.73.5.5 5.73.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.88-1.54-3.88-1.54-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.71.08-.71 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 2.9-.39c.98 0 1.97.13 2.9.39 2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.69 5.39-5.25 5.68.41.35.77 1.05.77 2.12 0 1.53-.01 2.76-.01 3.14 0 .31.21.68.8.56C20.71 21.39 24 17.08 24 12 24 5.73 18.27.5 12 .5Z"/></svg></a>
+        </span>
+      </div>
+    </div>
     <div class="badges">
-      <span id="data-badge" class="badge soft">loading…</span>
-      <span id="geo-badge" class="badge">checking geometry…</span>
+      <div class="stat" id="stat-matches" title="Matches played">
+        <span class="stat-bar"><span class="stat-fill" id="matches-fill"></span></span>
+        <span class="stat-txt" id="matches-txt">—</span>
+      </div>
+      <div class="stat" id="stat-teams" title="Teams still in the tournament">
+        <span class="stat-bar"><span class="stat-fill" id="teams-fill"></span></span>
+        <span class="stat-txt" id="teams-txt">—</span>
+      </div>
+      <button id="share-btn" class="share-btn" type="button" aria-label="Copy link to this bracket">Share</button>
     </div>
   </header>
 
   <main class="stage">
     <aside id="odds-panel" aria-label="Title odds">
       <h2>Title odds</h2>
-      <p class="odds-note">Elo model estimate — not betting odds</p>
+      <p class="odds-note">Elo model estimate (not betting odds)</p>
       <ol id="odds-list"></ol>
     </aside>
 

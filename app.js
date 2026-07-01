@@ -15,13 +15,14 @@
   'use strict';
 
   var SVGNS = 'http://www.w3.org/2000/svg';
-  var NODE_R = 20, INNER_R = 18, CHAMP_R = 26, LABEL_GAP = 15;
+  var NODE_R = 24, INNER_R = 21, CHAMP_R = 30, LABEL_GAP = 23;
   var REFRESH_MS = 60000;
   var SIM_RUNS = 20000;
 
   var clipSeq = 0;
   var currentOdds = {};               // tla -> championship probability
   var currentElim = {};               // tla -> true if the team has lost a match
+  var currentElimBy = {};             // tla -> team that eliminated them
   var ELO = (window.WC_ELO && window.WC_ELO.ratings) || {};
 
   function el(name, attrs) {
@@ -57,11 +58,14 @@
     var nodes = Bracket.allNodes(root);
 
     // Eliminated = a team that actually LOST a played match (distinct from an
-    // alive longshot whose Monte Carlo odds merely round to zero).
-    currentElim = {};
+    // alive longshot whose Monte Carlo odds merely round to zero). Also record
+    // who knocked them out, for the status text.
+    currentElim = {}; currentElimBy = {};
     nodes.forEach(function (n) {
       if (n.children.length && n.status === 'FINISHED' && n.winner) {
-        [n.teamA, n.teamB].forEach(function (t) { if (t && t.code !== n.winner.code) currentElim[t.code] = true; });
+        [n.teamA, n.teamB].forEach(function (t) {
+          if (t && t.code !== n.winner.code) { currentElim[t.code] = true; currentElimBy[t.code] = n.winner; }
+        });
       }
     });
 
@@ -82,12 +86,12 @@
     });
 
     // Outer ring: 32 R32 slots, ghosted once their match is played.
-    Bracket.leaves(root).forEach(function (leaf) {
+    Bracket.leaves(root).forEach(function (leaf, i) {
       var played = leaf.parent && leaf.parent.status === 'FINISHED';
       gNodes.appendChild(flagNode({
         x: leaf.x, y: leaf.y, r: NODE_R, angle: leaf.angle, leafRadius: leaf.r,
         team: leaf.team, ghost: played, code: leaf.team ? leaf.team.code : 'TBD',
-        showCode: true, tip: teamTip(leaf.team), defs: defs
+        showCode: true, sub: TeamData.R32_PROVENANCE[i], tip: teamTip(leaf.team), defs: defs
       }));
     });
 
@@ -121,9 +125,12 @@
         tip: 'Champion: ' + root.winner.name, defs: defs, champ: true
       }));
     } else {
-      var t = el('text', { x: Bracket.CX, y: Bracket.CY + 9, class: 'trophy' });
-      t.textContent = '🏆';
-      gCenter.appendChild(t);
+      var trophy = el('image', {
+        x: Bracket.CX - 18, y: Bracket.CY - 30, width: 36, height: 57, class: 'trophy-img'
+      });
+      trophy.setAttributeNS('http://www.w3.org/1999/xlink', 'href', 'trophy.svg');
+      trophy.setAttribute('href', 'trophy.svg');
+      gCenter.appendChild(trophy);
     }
 
     renderOdds(model);
@@ -159,6 +166,12 @@
       var label = el('text', { x: lp.x, y: lp.y, class: 'code' });
       label.textContent = o.code;
       g.appendChild(label);
+      // Group-position provenance, stacked directly beneath the code (screen-space).
+      if (o.sub) {
+        var sub = el('text', { x: lp.x, y: lp.y + 12, class: 'prov' });
+        sub.textContent = o.sub;
+        g.appendChild(sub);
+      }
     }
     attachTip(g, o.tip);
     return g;
@@ -166,26 +179,69 @@
 
   function teamTip(team) {
     if (!team) return 'To be decided';
-    if (currentElim[team.code]) return team.name + ' · eliminated';
+    if (currentElim[team.code]) {
+      var by = currentElimBy[team.code];
+      return team.name + ' · eliminated' + (by ? ' by ' + by.name : '');
+    }
     var o = currentOdds[team.code];
     if (o == null || o < 0.001) return team.name + ' · title <0.1%';
     return team.name + ' · title ' + pct(o);
   }
 
-  // Small always-visible pill at an undecided matchup: favourite + win %.
+  // Kickoff helpers (viewer's local timezone).
+  function kickShort(iso) {
+    var d = new Date(iso);
+    return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  }
+  function isToday(iso) {
+    var d = new Date(iso), n = new Date();
+    return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+  }
+  function isLive(status) { return status === 'IN_PLAY' || status === 'PAUSED'; }
+
+  // Always-visible pill at an undecided matchup: favourite + win %, a kickoff
+  // line beneath, and a LIVE/TODAY marker above when relevant.
   function matchLabel(n) {
     var pa = Sim.eloProb(rate(n.teamA.code), rate(n.teamB.code));
     var favA = pa >= 0.5;
     var fav = favA ? n.teamA : n.teamB;
     var favP = Math.round((favA ? pa : 1 - pa) * 100);
     var txt = fav.code + ' ' + favP + '%';
-    var w = txt.length * 5.0 + 9, h = 13;
+    var w = txt.length * 6.9 + 13, h = 17.5;
     var g = el('g', { class: 'mlabel' });
     g.appendChild(el('rect', { x: n.x - w / 2, y: n.y - h / 2, width: w, height: h, rx: 6.5, class: 'mlabel-bg' }));
     var t = el('text', { x: n.x, y: n.y, class: 'mlabel-txt' });
     t.textContent = txt;
     g.appendChild(t);
-    attachTip(g, matchTooltip(n));   // full A% v B% split + date on hover
+
+    // Kickoff date + time beneath the pill.
+    if (n.kickoff) {
+      var k = el('text', { x: n.x, y: n.y + h / 2 + 8.5, class: 'mkick' });
+      k.textContent = kickShort(n.kickoff);
+      g.appendChild(k);
+    }
+
+    // LIVE / TODAY marker above the pill. Laid out left-to-right (dot, gap, text)
+    // so the dot never overlaps the first letter.
+    var live = isLive(n.status);
+    var today = n.kickoff && isToday(n.kickoff);
+    if (live || today) {
+      var badge = el('g', { class: 'mmark ' + (live ? 'live' : 'today') });
+      var my = n.y - h / 2 - 9;
+      var label = live ? 'LIVE' : 'TODAY';
+      var padL = 8, dotR = 2.3, gap = 6, padR = 9;
+      var tw = label.length * 5.6;
+      var bw = padL + dotR * 2 + gap + tw + padR;
+      var left = n.x - bw / 2;
+      badge.appendChild(el('rect', { x: left, y: my - 7, width: bw, height: 14, rx: 7, class: 'mmark-bg' }));
+      badge.appendChild(el('circle', { cx: left + padL + dotR, cy: my, r: dotR, class: 'mmark-dot' }));
+      var mt = el('text', { x: left + padL + dotR * 2 + gap, y: my, class: 'mmark-txt' });
+      mt.textContent = label;
+      badge.appendChild(mt);
+      g.appendChild(badge);
+    }
+
+    attachTip(g, matchTooltip(n));
     return g;
   }
 
@@ -193,11 +249,12 @@
     var a = n.teamA, b = n.teamB;
     var an = a ? a.code : 'TBD', bn = b ? b.code : 'TBD';
     if (n.status === 'FINISHED' && n.scoreLine) {
-      return an + '  ' + n.scoreLine + '  ' + bn + (n.winner ? '  ➜ ' + n.winner.code : '');
+      var pens = /pens/.test(n.scoreLine) ? '  ·  decided on penalties' : '';
+      return an + '  ' + n.scoreLine + '  ' + bn + (n.winner ? '  ➜ ' + n.winner.code + ' won' : '') + pens;
     }
     if (a && b) {
       var pa = Sim.eloProb(rate(a.code), rate(b.code));
-      var when = n.kickoff ? '  ·  ' + new Date(n.kickoff).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
+      var when = n.kickoff ? '  ·  ' + (isLive(n.status) ? 'LIVE now' : kickShort(n.kickoff)) : '';
       return an + ' ' + Math.round(pa * 100) + '%  v  ' + Math.round((1 - pa) * 100) + '% ' + bn + when + '  (Elo model)';
     }
     return an + ' v ' + bn;
@@ -238,16 +295,36 @@
   }
 
   function updateBadges(model, source) {
+    var isLive = source === 'live';
+
+    // Matches played of the 31 knockout matches.
+    var played = model.counts.finished, total = model.counts.total || 31;
+    setBar('matches-fill', played, total);
+    var mtxt = document.getElementById('matches-txt');
+    if (mtxt) mtxt.textContent = played + '/' + total + ' played';
+
+    // Teams still alive of 32 (drops as teams are eliminated).
+    var alive = 32 - Object.keys(currentElim).length;
+    setBar('teams-fill', alive, 32);
+    var ttxt = document.getElementById('teams-txt');
+    if (ttxt) ttxt.textContent = alive + '/32 teams';
+
+    // Live-status indicator in the header (green pulse when live, amber if the
+    // feed is unreachable and we're rendering the bundled snapshot).
+    var wrap = document.getElementById('live-status');
+    var label = document.getElementById('live-label');
+    if (wrap) wrap.className = 'live-status ' + (isLive ? 'on' : 'off');
+    if (wrap) wrap.title = isLive ? 'Live data, auto-updating' : 'Live feed unavailable — showing a saved snapshot';
+    if (label) label.textContent = isLive ? 'LIVE' : 'OFFLINE';
+
+    // Internal integrity check kept in the console only (not user-facing).
     var v = Bracket.verify(model.root);
-    var geo = document.getElementById('geo-badge');
-    geo.className = 'badge ' + (v.pass && !model.warnings.length ? 'ok' : 'bad');
-    geo.textContent = v.pass
-      ? 'Geometry ✓ ' + v.leaves + ' teams · ' + v.matches + ' matches' + (model.warnings.length ? ' · ' + model.warnings.length + ' warning(s)' : ' · routes valid')
-      : 'Geometry FAILED';
-    var data = document.getElementById('data-badge');
-    data.className = 'badge ' + (source === 'live' ? 'ok' : 'soft');
-    data.textContent = (source === 'live' ? 'Live' : 'Snapshot') + ' · ' + model.counts.finished + '/' + model.counts.total + ' played';
-    if (model.warnings.length) console.warn('Bracket warnings:', model.warnings);
+    if (!v.pass || model.warnings.length) console.warn('Bracket check:', v.details, model.warnings);
+  }
+
+  function setBar(id, value, max) {
+    var f = document.getElementById(id);
+    if (f) f.style.width = Math.max(0, Math.min(100, (value / max) * 100)) + '%';
   }
 
   // ---- Tooltip --------------------------------------------------------------
@@ -272,7 +349,34 @@
       render(model, res.source);
     });
   }
-  function start() { cycle(); setInterval(cycle, REFRESH_MS); }
+  // ---- Share (copy link) ----------------------------------------------------
+  function wireShare() {
+    var btn = document.getElementById('share-btn');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      var url = location.href;
+      var flash = function (msg) {
+        var orig = btn.textContent;
+        btn.textContent = msg; btn.classList.add('copied');
+        setTimeout(function () { btn.textContent = orig; btn.classList.remove('copied'); }, 1500);
+      };
+      var fallback = function () {
+        try {
+          var ta = document.createElement('textarea');
+          ta.value = url; ta.setAttribute('readonly', '');
+          ta.style.position = 'absolute'; ta.style.left = '-9999px';
+          document.body.appendChild(ta); ta.select();
+          document.execCommand('copy'); document.body.removeChild(ta);
+          flash('Copied!');
+        } catch (e) { flash('Copy failed'); }
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(function () { flash('Copied!'); }).catch(fallback);
+      } else { fallback(); }
+    });
+  }
+
+  function start() { wireShare(); cycle(); setInterval(cycle, REFRESH_MS); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();
 })();
