@@ -20,10 +20,16 @@
         <span class="title-sub">KNOCKOUTS</span>
       </h1>
       <div class="header-meta">
+        <div class="mode-toggle" role="tablist" aria-label="View mode">
+          <button class="mode-btn active" id="mode-live" type="button" role="tab" aria-selected="true">Live</button>
+          <button class="mode-btn" id="mode-sim" type="button" role="tab" aria-selected="false">Simulate</button>
+        </div>
         <span class="live-status on" id="live-status" title="Live data, auto-updating">
           <span class="live-dot" id="live-dot"></span>
           <span class="live-label" id="live-label">LIVE</span>
         </span>
+        <span class="sim-status" id="sim-status" title="Simulator — your picks, hypothetical"><span class="sim-dot"></span>SIM</span>
+        <button class="reset-btn" id="reset-picks" type="button">Reset picks</button>
         <span class="meta-dot" aria-hidden="true">·</span>
         <span class="credit">By
           <a href="https://x.com/Kryptyk_Skyptyk" target="_blank" rel="noopener noreferrer">Kryptyk-Skyptyk<span class="arw">↗</span></a>
@@ -67,6 +73,7 @@
   <script src="snapshot.js"></script>
   <script src="results.js"></script>
   <script src="sim.js"></script>
+  <script src="picks.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

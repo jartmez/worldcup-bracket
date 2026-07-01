@@ -20,10 +20,19 @@
   var SIM_RUNS = 20000;
 
   var clipSeq = 0;
-  var currentOdds = {};               // tla -> championship probability
-  var currentElim = {};               // tla -> true if the team has lost a match
-  var currentElimBy = {};             // tla -> team that eliminated them
+  var currentOdds = {};               // tla -> displayed probability (scenario in sim, baseline in live)
+  var currentBaseOdds = {};           // pure Elo model: real results + Elo
+  var currentScenarioOdds = {};       // real results + your picks + Elo
+  var currentElim = {};               // tla -> true if the team has lost a REAL match
+  var currentElimBy = {};             // tla -> team that eliminated them (real)
+  var currentPickElim = {};           // tla -> true if knocked out by one of your picks
   var ELO = (window.WC_ELO && window.WC_ELO.ratings) || {};
+
+  // ---- Simulator state ------------------------------------------------------
+  var mode = 'live';                  // 'live' | 'sim'
+  var picks = {};                     // nodeId -> picked team code (what-if)
+  var lastMatches = [];               // most recent live/snapshot matches
+  var lastSource = 'snapshot';
 
   function el(name, attrs) {
     var e = document.createElementNS(SVGNS, name);
@@ -45,6 +54,20 @@
       });
   }
 
+  function winnerOf(n) { return n.children.length ? n.winner : n.team; }
+
+  // Build the real-state model, then (in sim mode) overlay valid what-if picks.
+  // Reality is always locked; SimPicks.apply drops any pick contradicted by the
+  // current real results or by a changed upstream pick.
+  function buildModel(matches) {
+    var model = Results.build(matches);
+    Bracket.allNodes(model.root).forEach(function (n) {
+      n.realWinner = (n.children.length && n.status === 'FINISHED') ? n.winner : null;
+    });
+    model.validPicks = (mode === 'sim') ? SimPicks.apply(model.root, picks) : {};
+    return model;
+  }
+
   // ---- Rendering ------------------------------------------------------------
   function render(model, source) {
     var root = model.root;
@@ -60,12 +83,16 @@
     // Eliminated = a team that actually LOST a played match (distinct from an
     // alive longshot whose Monte Carlo odds merely round to zero). Also record
     // who knocked them out, for the status text.
-    currentElim = {}; currentElimBy = {};
+    currentElim = {}; currentElimBy = {}; currentPickElim = {};
     nodes.forEach(function (n) {
-      if (n.children.length && n.status === 'FINISHED' && n.winner) {
+      if (!n.children.length || !n.winner) return;
+      if (n.status === 'FINISHED') {
         [n.teamA, n.teamB].forEach(function (t) {
           if (t && t.code !== n.winner.code) { currentElim[t.code] = true; currentElimBy[t.code] = n.winner; }
         });
+      } else if (n.pick) {
+        // Knocked out by one of the user's what-if picks.
+        [n.teamA, n.teamB].forEach(function (t) { if (t && t.code !== n.winner.code) currentPickElim[t.code] = true; });
       }
     });
 
@@ -82,16 +109,20 @@
 
     nodes.forEach(function (n) {
       if (!n.parent) return;
-      gConn.appendChild(el('path', { d: Bracket.connectorPath(n), class: 'connector' + (n.isWinnerEdge ? ' win' : '') }));
+      var cls = 'connector' + (n.isWinnerEdge ? ' win' : '') + (n.isPickEdge ? ' pick' : '');
+      gConn.appendChild(el('path', { d: Bracket.connectorPath(n), class: cls }));
     });
 
-    // Outer ring: 32 R32 slots, ghosted once their match is played.
+    // Outer ring: 32 R32 slots, ghosted once their match is decided (real or pick).
     Bracket.leaves(root).forEach(function (leaf, i) {
-      var played = leaf.parent && leaf.parent.status === 'FINISHED';
+      var m = leaf.parent;
+      var decided = !!(m && m.winner);
+      var pickable = mode === 'sim' && m && m.status !== 'FINISHED' && !!leaf.team;
       gNodes.appendChild(flagNode({
         x: leaf.x, y: leaf.y, r: NODE_R, angle: leaf.angle, leafRadius: leaf.r,
-        team: leaf.team, ghost: played, code: leaf.team ? leaf.team.code : 'TBD',
-        showCode: true, sub: TeamData.R32_PROVENANCE[i], tip: teamTip(leaf.team), defs: defs
+        team: leaf.team, ghost: decided, code: leaf.team ? leaf.team.code : 'TBD',
+        showCode: true, sub: TeamData.R32_PROVENANCE[i], tip: teamTip(leaf.team), defs: defs,
+        pickable: pickable, onPick: pickable ? function () { togglePick(m, leaf.team.code); } : null
       }));
     });
 
@@ -100,10 +131,13 @@
       if (!n.children.length || n.depth === 0) return;
       if (n.winner) {
         var advanced = n.parent && n.parent.winner && n.parent.winner.code === n.winner.code;
+        var pm = n.parent;
+        var pickable = mode === 'sim' && pm && pm.status !== 'FINISHED' && pm.teamA && pm.teamB;
         gNodes.appendChild(flagNode({
           x: n.x, y: n.y, r: INNER_R, angle: n.angle, leafRadius: n.r,
           team: n.winner, ghost: advanced, code: n.winner.code, showCode: false,
-          tip: teamTip(n.winner), defs: defs
+          tip: teamTip(n.winner), defs: defs, pick: n.pick,
+          pickable: pickable, onPick: pickable ? (function (mm, code) { return function () { togglePick(mm, code); }; })(pm, n.winner.code) : null
         }));
       } else if (n.parent) {
         if (n.teamA && n.teamB) {
@@ -122,7 +156,8 @@
       gCenter.appendChild(flagNode({
         x: Bracket.CX, y: Bracket.CY, r: CHAMP_R, angle: -90, leafRadius: 0,
         team: root.winner, ghost: false, code: root.winner.code, showCode: false,
-        tip: 'Champion: ' + root.winner.name, defs: defs, champ: true
+        tip: (root.pick ? 'Your pick to win: ' : 'Champion: ') + root.winner.name,
+        defs: defs, champ: true, pick: root.pick
       }));
     } else {
       var trophy = el('image', {
@@ -133,12 +168,13 @@
       gCenter.appendChild(trophy);
     }
 
-    renderOdds(model);
+    renderOdds();
     updateBadges(model, source);
   }
 
   function flagNode(o) {
-    var g = el('g', { class: 'team' + (o.ghost ? ' ghost' : ''), tabindex: '0', 'data-name': o.tip });
+    var cls = 'team' + (o.ghost ? ' ghost' : '') + (o.pickable ? ' pickable' : '') + (o.pick ? ' picked' : '');
+    var g = el('g', { class: cls, tabindex: '0', 'data-name': o.tip });
     g.appendChild(el('circle', { cx: o.x, cy: o.y, r: o.r, class: 'flag-disc' }));
     var fallback = el('text', { x: o.x, y: o.y + 4, class: 'flag-fallback' });
     fallback.textContent = o.code;
@@ -160,7 +196,11 @@
       g.classList.add('flag-missing');
     }
     g.appendChild(fallback);
-    g.appendChild(el('circle', { cx: o.x, cy: o.y, r: o.r, class: 'flag-ring' + (o.champ ? ' champ' : '') }));
+    g.appendChild(el('circle', { cx: o.x, cy: o.y, r: o.r, class: 'flag-ring' + (o.champ ? ' champ' : '') + (o.pick ? ' pick' : '') }));
+    if (o.onPick) {
+      g.addEventListener('click', function (ev) { ev.preventDefault(); o.onPick(); });
+      g.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); o.onPick(); } });
+    }
     if (o.showCode) {
       var lp = Bracket.polar(o.leafRadius + o.r + LABEL_GAP, o.angle);
       var label = el('text', { x: lp.x, y: lp.y, class: 'code' });
@@ -183,7 +223,14 @@
       var by = currentElimBy[team.code];
       return team.name + ' · eliminated' + (by ? ' by ' + by.name : '');
     }
-    var o = currentOdds[team.code];
+    if (mode === 'sim' && currentPickElim[team.code]) return team.name + ' · out in your sim';
+    if (mode === 'sim') {
+      var s = currentScenarioOdds[team.code], b = currentBaseOdds[team.code] || 0;
+      var sTxt = (s == null || s < 0.001) ? '<0.1%' : pct(s);
+      var bTxt = (b < 0.001) ? '<0.1%' : pct(b);
+      return team.name + ' · title ' + sTxt + ' (Elo ' + bTxt + ')';
+    }
+    var o = currentBaseOdds[team.code];
     if (o == null || o < 0.001) return team.name + ' · title <0.1%';
     return team.name + ' · title ' + pct(o);
   }
@@ -261,35 +308,68 @@
   }
 
   // ---- Title odds (Monte Carlo) ---------------------------------------------
+  // Baseline = real results + Elo (pure model). Scenario = real results + your
+  // valid picks (as certainties) + Elo for everything still open. With no picks
+  // the two are identical (we reuse the baseline so they match exactly).
   function computeOdds(model) {
-    if (!window.Sim) { currentOdds = {}; return; }
-    currentOdds = Sim.montecarlo(model.root, ELO, SIM_RUNS);
+    if (!window.Sim) { currentBaseOdds = {}; currentScenarioOdds = {}; currentOdds = {}; return; }
+    currentBaseOdds = Sim.montecarlo(model.root, ELO, SIM_RUNS);
+    var vp = model.validPicks || {};
+    currentScenarioOdds = (mode === 'sim' && Object.keys(vp).length)
+      ? Sim.montecarlo(model.root, ELO, SIM_RUNS, vp)
+      : currentBaseOdds;
+    currentOdds = (mode === 'sim') ? currentScenarioOdds : currentBaseOdds;
   }
 
-  function renderOdds(model) {
+  function renderOdds() {
     var list = document.getElementById('odds-list');
     if (!list) return;
+    var sim = mode === 'sim';
+    var h2 = document.querySelector('#odds-panel h2');
+    if (h2) h2.textContent = sim ? 'Title odds · Sim' : 'Title odds';
+    var note = document.querySelector('#odds-panel .odds-note');
+    if (note) note.textContent = sim
+      ? 'Gold = your picks, muted = Elo model (not betting odds)'
+      : 'Elo model estimate (not betting odds)';
+    list.className = sim ? 'sim' : '';
     clear(list);
-    var ranked = Object.keys(currentOdds).map(function (code) { return [code, currentOdds[code]]; })
-      .sort(function (a, b) { return b[1] - a[1]; })
-      .filter(function (e) { return e[1] >= 0.001; })
+
+    var rankBy = sim ? currentScenarioOdds : currentBaseOdds;
+    var ranked = Object.keys(rankBy)
+      .filter(function (c) { return rankBy[c] >= 0.001; })
+      .sort(function (a, b) { return rankBy[b] - rankBy[a]; })
       .slice(0, 12);
-    var alive = {};
-    Bracket.leaves(model.root).forEach(function (l) { if (l.team && !(l.parent && l.parent.status === 'FINISHED')) alive[l.team.code] = 1; });
-    ranked.forEach(function (e) {
-      var code = e[0], p = e[1];
+
+    ranked.forEach(function (code) {
+      var s = currentScenarioOdds[code] || 0, b = currentBaseOdds[code] || 0;
+      var shown = sim ? s : b;
       var ref = TeamData.FIFA[code];
       var li = document.createElement('li');
+
       var img = document.createElement('img');
-      img.className = 'odds-flag';
-      img.src = ref ? TeamData.flagUrl(ref.iso) : '';
-      img.alt = code;
+      img.className = 'odds-flag'; img.src = ref ? TeamData.flagUrl(ref.iso) : ''; img.alt = code;
       var name = document.createElement('span'); name.className = 'odds-code'; name.textContent = code;
+
       var bar = document.createElement('span'); bar.className = 'odds-bar';
-      var fill = document.createElement('span'); fill.className = 'odds-fill'; fill.style.width = Math.max(3, p * 100) + '%';
+      var fill = document.createElement('span'); fill.className = 'odds-fill'; fill.style.width = Math.max(2, shown * 100) + '%';
       bar.appendChild(fill);
-      var val = document.createElement('span'); val.className = 'odds-val'; val.textContent = pct(p);
+      if (sim) {
+        var tick = document.createElement('span'); tick.className = 'odds-tick';
+        tick.style.left = Math.max(0, Math.min(100, b * 100)) + '%';
+        tick.title = 'Elo model: ' + pct(b);
+        bar.appendChild(tick);
+      }
+
+      var val = document.createElement('span'); val.className = 'odds-val'; val.textContent = pct(shown);
       li.appendChild(img); li.appendChild(name); li.appendChild(bar); li.appendChild(val);
+
+      if (sim) {
+        var d = s - b;
+        var delta = document.createElement('span');
+        delta.className = 'odds-delta ' + (d > 0.005 ? 'up' : (d < -0.005 ? 'down' : 'flat'));
+        delta.textContent = Math.abs(d) < 0.005 ? '' : (d > 0 ? '+' : '−') + Math.round(Math.abs(d) * 100);
+        li.appendChild(delta);
+      }
       list.appendChild(li);
     });
   }
@@ -341,12 +421,42 @@
   function moveTip(ev) { var t = getTip(); t.style.left = (ev.clientX + 12) + 'px'; t.style.top = (ev.clientY - 28) + 'px'; }
   function hideTip() { getTip().hidden = true; }
 
+  // ---- Simulator controls ---------------------------------------------------
+  function rerender() {
+    var model = buildModel(lastMatches);
+    if (mode === 'sim') picks = model.validPicks; // prune orphaned picks to reality
+    computeOdds(model);
+    render(model, lastSource);
+  }
+  function togglePick(matchNode, code) {
+    if (picks[matchNode.id] === code) delete picks[matchNode.id];
+    else picks[matchNode.id] = code;
+    rerender();
+  }
+  function resetPicks() { picks = {}; rerender(); }
+  function setMode(m) {
+    if (mode === m) return;
+    mode = m;
+    var bar = document.querySelector('.topbar');
+    if (bar) bar.classList.toggle('sim', m === 'sim');
+    var lb = document.getElementById('mode-live'), sb = document.getElementById('mode-sim');
+    if (lb) { lb.classList.toggle('active', m === 'live'); lb.setAttribute('aria-selected', m === 'live'); }
+    if (sb) { sb.classList.toggle('active', m === 'sim'); sb.setAttribute('aria-selected', m === 'sim'); }
+    rerender();
+  }
+  function wireSimControls() {
+    var lb = document.getElementById('mode-live'), sb = document.getElementById('mode-sim');
+    if (lb) lb.addEventListener('click', function () { setMode('live'); });
+    if (sb) sb.addEventListener('click', function () { setMode('sim'); });
+    var rb = document.getElementById('reset-picks');
+    if (rb) rb.addEventListener('click', resetPicks);
+  }
+
   // ---- Boot + auto-refresh --------------------------------------------------
   function cycle() {
     loadMatches().then(function (res) {
-      var model = Results.build(res.matches);
-      computeOdds(model);
-      render(model, res.source);
+      lastMatches = res.matches; lastSource = res.source;
+      rerender();
     });
   }
   // ---- Share (copy link) ----------------------------------------------------
@@ -376,7 +486,7 @@
     });
   }
 
-  function start() { wireShare(); cycle(); setInterval(cycle, REFRESH_MS); }
+  function start() { wireShare(); wireSimControls(); cycle(); setInterval(cycle, REFRESH_MS); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();
 })();

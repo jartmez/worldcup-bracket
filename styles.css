@@ -87,6 +87,50 @@ body {
 .meta-dot { color: var(--muted); }
 .header-meta .credit { margin: 0; }
 
+/* Mode toggle (Live / Simulate) */
+.mode-toggle {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  padding: 2px;
+}
+.mode-btn {
+  font-family: var(--font);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  padding: 3px 12px;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.mode-btn.active { color: #0b0d10; background: var(--accent); }
+.topbar.sim .mode-btn.active { background: var(--gold); }
+
+/* SIM indicator + reset (shown only in simulate mode) */
+.sim-status { display: none; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; color: var(--gold); }
+.sim-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); flex: none; box-shadow: 0 0 6px rgba(245, 196, 81, 0.6); }
+.topbar.sim .sim-status { display: inline-flex; }
+.topbar.sim .live-status { display: none; }
+.reset-btn {
+  display: none;
+  font-family: var(--font);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  padding: 3px 11px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.topbar.sim .reset-btn { display: inline-flex; }
+.reset-btn:hover { color: var(--text); border-color: var(--disc-stroke); }
+
 .badges { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
 /* Compact progress-bar stat widgets */
@@ -187,9 +231,25 @@ body {
 }
 .odds-flag { width: 18px; height: 18px; border-radius: 50%; object-fit: cover; }
 .odds-code { font-size: 12.5px; font-weight: 700; color: var(--code); }
-.odds-bar { height: 5px; background: var(--line-soft); border-radius: 3px; overflow: hidden; }
+.odds-bar { position: relative; height: 5px; background: var(--line-soft); border-radius: 3px; overflow: hidden; }
 .odds-fill { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
 .odds-val { font-size: 12.5px; font-weight: 500; color: var(--text); text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Simulator: dual odds. Fill = scenario (gold), tick = Elo baseline, delta chip. */
+#odds-list.sim li { grid-template-columns: 18px 30px 1fr 32px 30px; }
+#odds-list.sim .odds-fill { background: var(--gold); }
+.odds-tick {
+  position: absolute;
+  top: -1.5px;
+  bottom: -1.5px;
+  width: 2px;
+  background: var(--muted);
+  transform: translateX(-1px);
+}
+.odds-delta { font-size: 10.5px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+.odds-delta.up { color: var(--accent); }
+.odds-delta.down { color: #ff6b6b; }
+.odds-delta.flat { color: transparent; }
 
 /* Credit line inside the title-odds panel (By · handle · GitHub, one row) */
 .credit {
@@ -247,6 +307,14 @@ body {
   stroke-opacity: 1;
   stroke-width: 2.8;
   filter: drop-shadow(0 0 4px var(--accent-dim));
+}
+/* A pick advance: gold + dashed, distinct from a real (solid teal) result. */
+.connector.pick {
+  stroke: var(--gold);
+  stroke-opacity: 1;
+  stroke-width: 2.6;
+  stroke-dasharray: 5 4;
+  filter: drop-shadow(0 0 4px rgba(245, 196, 81, 0.5));
 }
 .matchpt { fill: var(--line); }
 .matchpt.done { fill: var(--accent); }
@@ -347,6 +415,14 @@ body {
 }
 .team.ghost { opacity: 0.32; }
 .team.ghost:hover, .team.ghost:focus { opacity: 0.9; }
+
+/* Simulator: pick-decided flags get a gold ring; pickable flags cue on hover. */
+.flag-ring.pick { stroke: var(--gold); stroke-width: 2.8; filter: drop-shadow(0 0 4px rgba(245, 196, 81, 0.5)); }
+.team.pickable { cursor: pointer; }
+.team.pickable:hover .flag-ring,
+.team.pickable:focus .flag-ring { stroke: var(--gold); stroke-width: 2.8; }
+.team.pickable.ghost { opacity: 0.5; }
+.team.pickable.ghost:hover { opacity: 0.95; }
 .code {
   fill: var(--code);
   font-size: 13px;

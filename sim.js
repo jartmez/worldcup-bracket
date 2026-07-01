@@ -15,25 +15,30 @@
 
   // Pre-flatten the tree into a bottom-up evaluation list so each run is a tight
   // loop with no recursion or allocation.
-  function compile(root) {
+  // extraLocks (optional): { nodeId: teamCode } forces those matches to a fixed
+  // winner (used for the user's what-if picks). Real FINISHED results are always
+  // locked regardless. extraLocks never override a finished match.
+  function compile(root, extraLocks) {
+    extraLocks = extraLocks || {};
     var order = Bracket.allNodes(root).slice().sort(function (a, b) { return b.depth - a.depth; });
     var index = {};
     order.forEach(function (n, i) { index[n.id] = i; });
     return order.map(function (n) {
+      var real = (n.children.length && n.status === 'FINISHED' && n.winner) ? n.winner.code : null;
       return {
         leaf: !n.children.length,
         team: n.children.length ? null : (n.team ? n.team.code : null),
         c0: n.children[0] ? index[n.children[0].id] : -1,
         c1: n.children[1] ? index[n.children[1].id] : -1,
-        locked: (n.children.length && n.status === 'FINISHED' && n.winner) ? n.winner.code : null,
+        locked: real || (n.children.length ? (extraLocks[n.id] || null) : null),
         isRoot: !n.parent
       };
     });
   }
 
-  function montecarlo(root, ratings, N) {
+  function montecarlo(root, ratings, N, extraLocks) {
     N = N || 20000;
-    var plan = compile(root);
+    var plan = compile(root, extraLocks);
     var len = plan.length;
     var win = new Array(len);
     var counts = {};
