@@ -392,6 +392,7 @@
 
     renderOdds();
     renderPlayers();
+    renderToday(model);
     updateBadges(model, source);
   }
 
@@ -773,6 +774,181 @@
     d.textContent = initials;
     d.title = player.name;
     return d;
+  }
+
+  // ---- Today list (under Players) ------------------------------------------
+  // Games whose kickoff falls on the viewer's current local date, not yet
+  // finished. Sorted by kickoff ascending so the next match sits on top.
+  function renderToday(model) {
+    var host = document.getElementById('today-list');
+    var note = document.getElementById('today-empty');
+    if (!host) return;
+    var games = [];
+    var seen = {};
+    Bracket.allNodes(model.root).forEach(function (n) {
+      if (!n.kickoff || !n.teamA || !n.teamB) return;
+      if (n.status === 'FINISHED') return;
+      if (!isToday(n.kickoff)) return;
+      var k = n.teamA.code + '-' + n.teamB.code + '@' + n.kickoff;
+      if (seen[k]) return;
+      seen[k] = true;
+      games.push(n);
+    });
+    games.sort(function (a, b) { return new Date(a.kickoff) - new Date(b.kickoff); });
+    if (!games.length) {
+      clear(host);
+      if (note) note.style.display = 'block';
+      return;
+    }
+    if (note) note.style.display = 'none';
+    clear(host);
+    games.forEach(function (n) { host.appendChild(buildTodayRow(n)); });
+  }
+
+  // 24h "HH:MM" in the viewer's local zone (toLocaleTimeString gives that).
+  function todayTime(iso) {
+    return new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
+  }
+
+  // Flag image with initials fallback if the CDN fails. Mirrors the player
+  // avatar pattern: rounded, bordered, swaps to a tinted disc with the TLA.
+  function makeFlag(team) {
+    var wrap = document.createElement('span');
+    wrap.className = 'today-flag-wrap';
+    var ref = TeamData.FIFA[team.code];
+    var src = ref ? TeamData.flagUrl(ref.iso) : '';
+    if (src) {
+      var img = document.createElement('img');
+      img.className = 'today-flag';
+      img.src = src;
+      img.alt = team.code;
+      img.addEventListener('error', function () {
+        var fb = document.createElement('span');
+        fb.className = 'today-flag-fb';
+        fb.textContent = team.code;
+        img.replaceWith(fb);
+      });
+      wrap.appendChild(img);
+    } else {
+      var fb = document.createElement('span');
+      fb.className = 'today-flag-fb';
+      fb.textContent = team.code;
+      wrap.appendChild(fb);
+    }
+    return wrap;
+  }
+
+  // One player-side column has three stacked rows:
+  //   row 1 (.today-code-row): team TLA, full side width
+  //   row 2 (.today-icons):    owner avatar(s) + flag, one horizontal line
+  //   row 3 (.today-names):    one line per owner's name, full width
+  // No owners -> the avatar slot shows "—" and the names slot shows "—".
+  // Multiple owners stack their avatars side-by-side in row 2 and their names
+  // one per line in row 3. `align` ('home'|'away') flips row 2 with row-reverse
+  // and right-aligns rows 1 + 3 so each flag stays on the inner edge.
+  function makeTodaySide(team, align) {
+    var side = document.createElement('div');
+    side.className = 'today-side ' + align;
+
+    var owners = collectOwners(team.code);
+
+    // Row 1: TLA.
+    var codeRow = document.createElement('div');
+    codeRow.className = 'today-code-row';
+    var code = document.createElement('span');
+    code.className = 'today-code';
+    code.textContent = team.code;
+    codeRow.appendChild(code);
+
+    // Row 2: avatar(s) + flag.
+    var icons = document.createElement('div');
+    icons.className = 'today-icons';
+    if (!owners.length) {
+      var none = document.createElement('span');
+      none.className = 'today-owner-none';
+      none.textContent = '—';
+      icons.appendChild(none);
+    } else {
+      owners.forEach(function (o) { icons.appendChild(makeAvatar(o)); });
+    }
+    icons.appendChild(makeFlag(team));
+
+    // Row 3: names.
+    var names = document.createElement('div');
+    names.className = 'today-names';
+    if (!owners.length) {
+      var nameNone = document.createElement('span');
+      nameNone.className = 'today-owner-none today-owner-empty';
+      nameNone.textContent = '—';
+      names.appendChild(nameNone);
+    } else {
+      owners.forEach(function (o) {
+        var nm = document.createElement('span');
+        nm.className = 'today-owner-name';
+        nm.textContent = o.name;
+        nm.title = o.name;
+        names.appendChild(nm);
+      });
+    }
+
+    side.appendChild(codeRow);
+    side.appendChild(icons);
+    side.appendChild(names);
+    return side;
+  }
+
+  // All players who have this team. Today's data has at most one, but iterate.
+  function collectOwners(tla) {
+    var out = [];
+    if (!TeamData || !TeamData.PLAYERS) return out;
+    for (var i = 0; i < TeamData.PLAYERS.length; i++) {
+      var tlas = TeamData.playerTlas(TeamData.PLAYERS[i]);
+      if (tlas.indexOf(tla) !== -1) out.push(TeamData.PLAYERS[i]);
+    }
+    return out;
+  }
+
+  // Small avatar element with initials fallback. Reused by makeTodaySide.
+  function makeAvatar(player) {
+    var av = document.createElement('img');
+    av.className = 'today-avatar';
+    av.src = 'avatars/' + player.id + '.webp';
+    av.alt = player.name;
+    av.title = player.name;
+    av.addEventListener('error', function () {
+      var init = (player.name || '?').split(/\s+/).map(function (w) { return w[0] || ''; }).join('').slice(0, 2).toUpperCase();
+      var fb = document.createElement('span');
+      fb.className = 'today-avatar today-avatar-fb';
+      fb.textContent = init;
+      fb.title = player.name;
+      av.replaceWith(fb);
+    });
+    return av;
+  }
+
+  function buildTodayRow(n) {
+    var row = document.createElement('div');
+    row.className = 'today-row';
+    row.tabIndex = 0;
+    row.setAttribute('role', 'group');
+    row.setAttribute('aria-label',
+      n.teamA.code + ' vs ' + n.teamB.code + ' a las ' + todayTime(n.kickoff));
+
+    var center = document.createElement('div');
+    center.className = 'today-center';
+    var vs = document.createElement('div');
+    vs.className = 'today-vs';
+    vs.textContent = 'vs';
+    var tm = document.createElement('div');
+    tm.className = 'today-time';
+    tm.textContent = todayTime(n.kickoff);
+    center.appendChild(vs);
+    center.appendChild(tm);
+
+    row.appendChild(makeTodaySide(n.teamA, 'home'));
+    row.appendChild(center);
+    row.appendChild(makeTodaySide(n.teamB, 'away'));
+    return row;
   }
 
   function updateBadges(model, source) {
