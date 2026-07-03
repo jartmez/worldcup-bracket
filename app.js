@@ -395,6 +395,51 @@
     updateBadges(model, source);
   }
 
+  // Returns the single player who picked this TLA, or null. Today's data has at
+  // most one owner per team; the helper exists so the call sites stay short.
+  function ownersOf(tla) {
+    if (!TeamData || !TeamData.PLAYERS) return null;
+    for (var i = 0; i < TeamData.PLAYERS.length; i++) {
+      if (TeamData.playerTlas(TeamData.PLAYERS[i]).indexOf(tla) !== -1) return TeamData.PLAYERS[i];
+    }
+    return null;
+  }
+
+  // Small round player-avatar badge anchored to the bottom-right corner of a
+  // flag disc, sized as a fraction of the disc radius. Halo (painted first as
+  // a panel-color circle) gives separation against any flag color; the avatar
+  // image is clipped to a circle. On image error, swap to a tinted disc with
+  // the player's initials.
+  function ownerBadge(x, y, r, player, defs) {
+    var br = r * 0.4;
+    var cx = x + r * 0.6;
+    var cy = y + r * 0.6;
+    var g = el('g', { class: 'owner-badge', 'data-name': player.name });
+    g.appendChild(el('circle', { cx: cx, cy: cy, r: br + 1.5, fill: 'var(--panel)' }));
+    var clipId = 'oclip' + (clipSeq++);
+    var clip = el('clipPath', { id: clipId });
+    clip.appendChild(el('circle', { cx: cx, cy: cy, r: br }));
+    defs.appendChild(clip);
+    var img = el('image', {
+      x: cx - br, y: cy - br, width: br * 2, height: br * 2,
+      preserveAspectRatio: 'xMidYMid slice', 'clip-path': 'url(#' + clipId + ')'
+    });
+    img.setAttributeNS('http://www.w3.org/1999/xlink', 'href', 'avatars/' + player.id + '.webp');
+    img.setAttribute('href', 'avatars/' + player.id + '.webp');
+    img.addEventListener('error', function () {
+      var fb = el('g');
+      fb.appendChild(el('circle', { cx: cx, cy: cy, r: br, fill: '#23262e', stroke: 'var(--line-soft)', 'stroke-width': '1' }));
+      var initials = (player.name || '?').split(/\s+/).map(function (w) { return w[0] || ''; }).join('').slice(0, 2).toUpperCase();
+      var tx = el('text', { x: cx, y: cy + br * 0.32, 'text-anchor': 'middle', 'dominant-baseline': 'middle',
+        fill: 'var(--code)', 'font-size': br * 0.95, 'font-weight': '800' });
+      tx.textContent = initials;
+      fb.appendChild(tx);
+      img.parentNode.replaceChild(fb, img);
+    });
+    g.appendChild(img);
+    return g;
+  }
+
   function flagNode(o) {
     var cls = 'team' + (o.ghost ? ' ghost' : '');
     var g = el('g', { class: cls, tabindex: '0', 'data-name': o.tip });
@@ -420,6 +465,8 @@
     }
     g.appendChild(fallback);
     g.appendChild(el('circle', { cx: o.x, cy: o.y, r: o.r, class: 'flag-ring' + (o.champ ? ' champ' : '') }));
+    var owner = o.team ? ownersOf(o.team.code) : null;
+    if (owner) g.appendChild(ownerBadge(o.x, o.y, o.r, owner, o.defs));
     if (o.showCode) {
       var lp = Bracket.polar(o.leafRadius + o.r + LABEL_GAP, o.angle);
       var label = el('text', { x: lp.x, y: lp.y, class: 'code' });
@@ -438,20 +485,22 @@
 
   function teamTip(team) {
     if (!team) return 'To be decided';
+    var owner = ownersOf(team.code);
+    var ownerSuffix = owner ? ' · picked by ' + owner.name : '';
     if (currentElim[team.code]) {
       var by = currentElimBy[team.code];
-      return team.name + ' · eliminated' + (by ? ' by ' + by.name : '');
+      return team.name + ' · eliminated' + (by ? ' by ' + by.name : '') + ownerSuffix;
     }
     if (marketOk) {
-      if (currentMarketElim[team.code]) return team.name + ' · out';
+      if (currentMarketElim[team.code]) return team.name + ' · out' + ownerSuffix;
       var mo = currentMarketOdds[team.code];
-      if (mo != null) return team.name + ' · title ' + pct(mo);
+      if (mo != null) return team.name + ' · title ' + pct(mo) + ownerSuffix;
       var eb = currentBaseOdds[team.code];
-      return team.name + ' · title ' + ((eb == null || eb < 0.001) ? '<0.1%' : pct(eb));
+      return team.name + ' · title ' + ((eb == null || eb < 0.001) ? '<0.1%' : pct(eb)) + ownerSuffix;
     }
     var o = currentBaseOdds[team.code];
-    if (o == null || o < 0.001) return team.name + ' · title <0.1%';
-    return team.name + ' · title ' + pct(o);
+    if (o == null || o < 0.001) return team.name + ' · title <0.1%' + ownerSuffix;
+    return team.name + ' · title ' + pct(o) + ownerSuffix;
   }
 
   // Kickoff helpers (viewer's local timezone).
