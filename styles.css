@@ -87,50 +87,6 @@ body {
 .meta-dot { color: var(--muted); }
 .header-meta .credit { margin: 0; }
 
-/* Mode toggle (Live / Simulate) */
-.mode-toggle {
-  display: inline-flex;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--line-soft);
-  border-radius: 999px;
-  padding: 2px;
-}
-.mode-btn {
-  font-family: var(--font);
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--muted);
-  background: transparent;
-  border: none;
-  border-radius: 999px;
-  padding: 3px 12px;
-  cursor: pointer;
-  transition: color 0.15s ease, background 0.15s ease;
-}
-.mode-btn.active { color: #0b0d10; background: var(--accent); }
-.topbar.sim .mode-btn.active { background: var(--gold); }
-
-/* SIM indicator + reset (shown only in simulate mode) */
-.sim-status { display: none; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; color: var(--gold); }
-.sim-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); flex: none; box-shadow: 0 0 6px rgba(245, 196, 81, 0.6); }
-.topbar.sim .sim-status { display: inline-flex; }
-.topbar.sim .live-status { display: none; }
-.reset-btn {
-  display: none;
-  font-family: var(--font);
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--muted);
-  background: transparent;
-  border: 1px solid var(--line-soft);
-  border-radius: 999px;
-  padding: 3px 11px;
-  cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease;
-}
-.topbar.sim .reset-btn { display: inline-flex; }
-.reset-btn:hover { color: var(--text); border-color: var(--disc-stroke); }
-
 .badges { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
 /* Compact progress-bar stat widgets */
@@ -174,23 +130,6 @@ body {
 .stat-dot.ok { background: var(--accent); box-shadow: 0 0 6px rgba(46, 230, 166, 0.6); }
 .stat-dot.bad { background: #ff5a5a; box-shadow: 0 0 6px rgba(255, 90, 90, 0.6); }
 
-.share-btn {
-  font-family: var(--font);
-  font-size: 13px;
-  font-weight: 600;
-  color: #0b0d10;
-  background: var(--accent);
-  border: 1px solid var(--accent);
-  border-radius: 999px;
-  padding: 5px 15px;
-  cursor: pointer;
-  transition: background 0.15s ease, transform 0.06s ease;
-  white-space: nowrap;
-}
-.share-btn:hover { background: #4bf0bb; }
-.share-btn:active { transform: translateY(1px); }
-.share-btn.copied { background: var(--gold); border-color: var(--gold); }
-
 .stage {
   position: relative;
   display: flex;
@@ -212,6 +151,148 @@ body {
   backdrop-filter: blur(4px);
   z-index: 5;
 }
+
+/* Players panel: top-left mirror of #odds-panel. Same glass card so the two
+   read as a pair flanking the bracket. */
+#players-panel {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  width: 205px;
+  background: rgba(20, 21, 25, 0.82);
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  padding: 12px 14px;
+  backdrop-filter: blur(4px);
+  z-index: 5;
+}
+#players-panel h2 {
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  margin: 0;
+  text-transform: uppercase;
+  color: var(--text);
+}
+#players-list { margin-top: 8px; }
+.player-row {
+  display: grid;
+  grid-template-columns: 26px 1fr 38px;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+  border-radius: 6px;
+  padding: 2px 4px;
+  outline: none;
+}
+.player-row:hover,
+.player-row:focus {
+  background: rgba(255, 255, 255, 0.04);
+}
+.player-row:focus-visible { box-shadow: 0 0 0 1px var(--accent); }
+.player-row.zero .player-avatar {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+.player-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #23262e;
+  border: 1px solid var(--line-soft);
+  display: block;
+}
+.player-avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--code);
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+.player-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.player-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-width: 34px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  background: rgba(46, 230, 166, 0.1);
+  border: 1px solid rgba(46, 230, 166, 0.35);
+  border-radius: 999px;
+  padding: 2px 8px;
+  justify-self: center;
+}
+.player-count.zero {
+  color: var(--muted);
+  background: rgba(154, 163, 178, 0.08);
+  border-color: var(--line-soft);
+}
+.player-count .player-count-total {
+  color: var(--muted);
+  font-weight: 500;
+}
+.players-note {
+  font-size: 10.5px;
+  color: var(--muted);
+  margin: 9px 0 0;
+  line-height: 1.4;
+}
+
+/* Player tooltip: rendered into the global #tooltip element via attachTip().
+   Two lists (Alive, Out), each with a round flag + FIFA English name. */
+.ptip { font-size: 12.5px; line-height: 1.35; color: var(--text); min-width: 165px; }
+.ptip-head { font-weight: 700; font-size: 13px; margin-bottom: 6px; }
+.ptip-section + .ptip-section { margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--line-soft); }
+.ptip-label {
+  font-size: 10.5px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.ptip-label.out { color: #ff6b6b; }
+.ptip-list { list-style: none; margin: 0; padding: 0; }
+.ptip-list li {
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  align-items: center;
+  gap: 7px;
+  padding: 2px 0;
+}
+.ptip-flag {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #23262e;
+  display: inline-block;
+}
+.ptip-flag-fb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8.5px;
+  font-weight: 800;
+  color: var(--code);
+  letter-spacing: 0.2px;
+}
+.ptip-name { white-space: nowrap; }
+.ptip-empty { font-size: 11.5px; color: var(--muted); }
 #odds-panel h2 {
   font-size: 13.5px;
   font-weight: 700;
@@ -235,22 +316,6 @@ body {
 .odds-fill { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
 .odds-val { font-size: 12.5px; font-weight: 500; color: var(--text); text-align: right; font-variant-numeric: tabular-nums; }
 
-/* Simulator: dual odds. Fill = scenario (gold), tick = Elo baseline, delta chip. */
-#odds-list.sim li { grid-template-columns: 18px 30px 1fr 32px 30px; }
-#odds-list.sim .odds-fill { background: var(--gold); }
-.odds-tick {
-  position: absolute;
-  top: -1.5px;
-  bottom: -1.5px;
-  width: 2px;
-  background: var(--muted);
-  transform: translateX(-1px);
-}
-.odds-delta { font-size: 10.5px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
-.odds-delta.up { color: var(--accent); }
-.odds-delta.down { color: #ff6b6b; }
-.odds-delta.flat { color: transparent; }
-
 /* Title-odds tables: Poly stacked on Elo, same team order so rows line up. */
 #odds-tables { margin-top: 6px; }
 .otbl + .otbl { margin-top: 12px; }
@@ -260,20 +325,13 @@ body {
   color: var(--muted); margin: 0 0 5px;
 }
 .otbl-head b { color: var(--text); font-weight: 700; }
-.otbl-head .otbl-sub { margin-left: auto; text-transform: none; letter-spacing: 0; font-size: 10px; }
 .otbl-row {
   display: grid;
   grid-template-columns: 18px 34px 1fr;
   align-items: center; gap: 7px; margin: 4px 0;
 }
-.otbl.sim .otbl-row { grid-template-columns: 18px 34px 1fr 42px; }
 .otbl-pct { font-size: 12.5px; font-weight: 500; color: var(--text); text-align: right; font-variant-numeric: tabular-nums; }
 .otbl-pct.none { color: var(--muted); }
-.otbl-delta { font-size: 11.5px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
-.otbl-delta.up { color: var(--accent); }
-.otbl-delta.down { color: #ff6b6b; }
-.otbl-delta.zero { color: var(--muted); }
-.otbl-delta.blank { color: transparent; }
 
 /* Source legend: the one place the full source words live */
 .odds-legend {
@@ -323,11 +381,18 @@ body {
 
 @media (max-width: 720px) {
   .stage { flex-direction: column; align-items: center; }
-  /* Bracket first, odds table below it (reordered without touching the DOM). */
+  /* Bracket first, then players, then odds (reordered without touching the DOM). */
   #bracket { order: 1; }
-  #odds-panel {
+  #players-panel {
     position: static;
     order: 2;
+    width: min(360px, 100%);
+    margin: 14px auto 0;
+    backdrop-filter: none;
+  }
+  #odds-panel {
+    position: static;
+    order: 3;
     width: min(360px, 100%);
     margin: 14px auto 0;
     backdrop-filter: none;
@@ -354,14 +419,6 @@ body {
   stroke-opacity: 1;
   stroke-width: 2.8;
   filter: drop-shadow(0 0 4px var(--accent-dim));
-}
-/* A pick advance: gold + dashed, distinct from a real (solid teal) result. */
-.connector.pick {
-  stroke: var(--gold);
-  stroke-opacity: 1;
-  stroke-width: 2.6;
-  stroke-dasharray: 5 4;
-  filter: drop-shadow(0 0 4px rgba(245, 196, 81, 0.5));
 }
 .matchpt { fill: var(--line); }
 .matchpt.done { fill: var(--accent); }
@@ -478,13 +535,6 @@ a:has(> .mlabel.market) { cursor: pointer; }
 .team.ghost { opacity: 0.32; }
 .team.ghost:hover, .team.ghost:focus { opacity: 0.9; }
 
-/* Simulator: pick-decided flags get a gold ring; pickable flags cue on hover. */
-.flag-ring.pick { stroke: var(--gold); stroke-width: 2.8; filter: drop-shadow(0 0 4px rgba(245, 196, 81, 0.5)); }
-.team.pickable { cursor: pointer; }
-.team.pickable:hover .flag-ring,
-.team.pickable:focus .flag-ring { stroke: var(--gold); stroke-width: 2.8; }
-.team.pickable.ghost { opacity: 0.5; }
-.team.pickable.ghost:hover { opacity: 0.95; }
 .code {
   fill: var(--code);
   font-size: 13px;

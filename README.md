@@ -39,7 +39,31 @@ It is a static site, so any local server works:
 npx serve .
 ```
 
-For live data you need a football-data.org key. Put it in a `.dev.vars` file as `FOOTBALL_DATA_KEY` and run it through `wrangler pages dev` so the proxy can read it. Without a key it falls back to a bundled snapshot of recent results, so the bracket still renders.
+Match data lives in `data/matches.json`. The bundled file is an empty placeholder
+(`{ "matches": [] }`) — to populate it from football-data.org, set the API key
+and run the refresh script:
+
+```
+FOOTBALL_DATA_KEY=... node scripts/refresh-matches.js
+```
+
+The page polls `data/matches.json` every 60 seconds (`cache: 'no-cache'`), so
+any update you commit to that file appears on the next poll.
+
+## Deployment
+
+Deploys cleanly to GitHub Pages from the `main` branch root:
+
+1. Settings → Pages → Build from `main` / `/` (root).
+2. Settings → Secrets and variables → Actions → add `FOOTBALL_DATA_KEY`.
+3. The workflow at `.github/workflows/refresh.yml` runs every 15 minutes
+   during match windows (11:00–23:59 UTC), updates `data/matches.json`,
+   and commits the result. Trigger it manually from the Actions tab if you
+   want a refresh outside the schedule.
+
+Polymarket endpoints are public and CORS-friendly, so the title-odds and
+per-match market pills call `gamma-api.polymarket.com` directly from the
+browser — no proxy required.
 
 ## Notes
 

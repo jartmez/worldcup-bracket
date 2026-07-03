@@ -151,9 +151,86 @@
     };
   }
 
+  // Players in the friends' bracket. Each picks 7 countries (Spanish names, with
+  // the user-supplied typos included so the lookup stays literal). Avatar file
+  // is ./avatars/<id>.webp. `picks` are resolved via ES2FIFA below.
+  var PLAYERS = [
+    { id: 'arturo',      name: 'Arturo',      picks: ['Países Bajos', 'Switzerland', 'Argelia', 'Turquía', 'Cabo Verde', 'Suecia', 'Bosnia Francia'] },
+    { id: 'carlos',      name: 'Carlos',      picks: ['Colombia', 'Jordania', 'Argentina', 'Autria', 'Chequia', 'Senegal', 'Arabia Saudi'] },
+    { id: 'portillito',  name: 'Portillito',  picks: ['Brasil', 'Marruecos', 'Costa de Marfil', 'Haiti', 'Croacia', 'Sudafrica', 'Curazao'] },
+    { id: 'portillo',    name: 'Portillo',    picks: ['Bélgica', 'Ecuador', 'Watar', 'Nueva Zelanda', 'Republica del Congo', 'Portugal', 'Corea del Sur'] },
+    { id: 'mario',       name: 'Mario',       picks: ['España', 'Iran', 'Panama', 'Irak', 'Estadis Unidos', 'Uzbekistan', 'Canada'] },
+    { id: 'luis',        name: 'Luis',        picks: ['Inglaterra', 'Japon', 'Escocia', 'Bosnia', 'Francia', ' Tunez', 'Uruguay'] },
+    { id: 'cesareo',     name: 'Cesareo',     picks: ['Alemania', 'Australia', 'Paraguay', 'Ghana', 'Mexico', 'Noruega', 'Egipto'] }
+  ];
+
+  // Spanish (and user-typo'd) country name -> FIFA TLA. Lookup is case- and
+  // whitespace-insensitive (see esToFifa below). Anything not in this table
+  // resolves to null and is excluded from the count.
+  var ES2FIFA = {
+    'paises bajos': 'NED', 'suiza': 'SUI', 'switzerland': 'SUI',
+    'argelia': 'ALG', 'algeria': 'ALG',
+    'turquia': 'TUR', 'turkiye': 'TUR', 'turkey': 'TUR',
+    'cabo verde': 'CPV', 'cape verde': 'CPV',
+    'suecia': 'SWE', 'sweden': 'SWE',
+    'colombia': 'COL',
+    'jordania': 'JOR', 'jordan': 'JOR',
+    'argentina': 'ARG',
+    'austria': 'AUT', 'autria': 'AUT',
+    'chequia': 'CZE', 'czechia': 'CZE',
+    'senegal': 'SEN',
+    'arabia saudi': 'KSA', 'arabia saudita': 'KSA', 'saudi arabia': 'KSA',
+    'brasil': 'BRA', 'brazil': 'BRA',
+    'marruecos': 'MAR', 'morocco': 'MAR',
+    'costa de marfil': 'CIV', 'cote d’ivoire': 'CIV', "cote d'ivoire": 'CIV', 'ivory coast': 'CIV',
+    'haiti': 'HAI',
+    'croacia': 'CRO', 'croatia': 'CRO',
+    'sudafrica': 'RSA', 'sudáfrica': 'RSA', 'south africa': 'RSA',
+    'curazao': 'CUW', 'curacao': 'CUW',
+    'belgica': 'BEL', 'bélgica': 'BEL', 'belgium': 'BEL',
+    'ecuador': 'ECU',
+    'qatar': 'QAT', 'watar': 'QAT',
+    'nueva zelanda': 'NZL', 'new zealand': 'NZL',
+    'republica del congo': 'COD', 'república del congo': 'COD', 'dr congo': 'COD',
+    'portugal': 'POR',
+    'corea del sur': 'KOR', 'south korea': 'KOR',
+    'españa': 'ESP', 'espana': 'ESP', 'spain': 'ESP',
+    'iran': 'IRN', 'irán': 'IRN',
+    'panama': 'PAN', 'panamá': 'PAN',
+    'irak': 'IRQ', 'iraq': 'IRQ',
+    'estados unidos': 'USA', 'estadis unidos': 'USA', 'united states': 'USA',
+    'uzbekistan': 'UZB', 'uzbekistán': 'UZB',
+    'canada': 'CAN', 'canadá': 'CAN',
+    'inglaterra': 'ENG', 'england': 'ENG',
+    'japon': 'JPN', 'japón': 'JPN', 'japan': 'JPN',
+    'escocia': 'SCO', 'scotland': 'SCO',
+    'bosnia': 'BIH', 'bosnia francia': 'BIH', 'bosnia & herzegovina': 'BIH', 'bosnia-herzegovina': 'BIH',
+    'francia': 'FRA', 'france': 'FRA',
+    'tunez': 'TUN', 'túnez': 'TUN', 'tunisia': 'TUN',
+    'uruguay': 'URU',
+    'alemania': 'GER', 'germany': 'GER',
+    'australia': 'AUS',
+    'paraguay': 'PAR',
+    'ghana': 'GHA',
+    'mexico': 'MEX', 'méxico': 'MEX',
+    'noruega': 'NOR', 'norway': 'NOR',
+    'egipto': 'EGY', 'egypt': 'EGY'
+  };
+  // Normalize: trim, lowercase, strip diacritics.
+  function norm(s) {
+    return (s || '').toString().trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+  // Resolve a Spanish country name (with the user's typos) to a FIFA TLA.
+  function esToFifa(name) { return ES2FIFA[norm(name)] || null; }
+  // A player's picks expressed as FIFA TLAs (entries that don't resolve drop out).
+  function playerTlas(player) {
+    return (player.picks || []).map(esToFifa).filter(function (c) { return !!c; });
+  }
+
   var api = {
     FIFA: FIFA, PLACEHOLDER: PLACEHOLDER, R32_PROVENANCE: R32_PROVENANCE, flagUrl: flagUrl,
-    teamByFifa: teamByFifa, resolveTeam: resolveTeam, PM_NAME: PM_NAME, polyName: polyName
+    teamByFifa: teamByFifa, resolveTeam: resolveTeam, PM_NAME: PM_NAME, polyName: polyName,
+    PLAYERS: PLAYERS, esToFifa: esToFifa, playerTlas: playerTlas
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   global.TeamData = api;
