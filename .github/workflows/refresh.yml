@@ -2,8 +2,8 @@ name: refresh matches
 
 on:
   schedule:
-    # Every 15 minutes between 11:00 and 23:59 UTC (typical WC match window).
-    - cron: '*/15 11-23 * * *'
+    # Every 30 minutes between 11:00 and 23:59 UTC (typical WC match window).
+    - cron: "*/30 11-23 * * *"
   workflow_dispatch:
 
 permissions:
@@ -18,7 +18,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "22"
 
       - name: Fetch latest matches from football-data.org
         env:
