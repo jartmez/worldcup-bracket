@@ -6,7 +6,7 @@ But this visual that has taken over football twitter finally inspired me to get 
 
 A radial knockout bracket for the 2026 FIFA World Cup. Thirty-two teams folding inward to a single trophy at the centre, and as results come in the surviving flags march toward the middle.
 
-Live here: https://worldcup-bracket-2e1.pages.dev
+Live here: https://jartmez.github.io/worldcup-bracket/
 
 Might be a little rusty as this is the first thing I have shipped in a while. Plz be kind and treat it as the hobby project it is instead of a polished product.
 
