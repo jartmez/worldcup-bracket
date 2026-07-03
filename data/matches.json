@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-03T02:24:46.706Z",
+  "generatedAt": "2026-07-03T12:52:25.037Z",
   "competition": "FIFA World Cup 2026",
   "count": 31,
   "matches": [
@@ -362,7 +362,7 @@
     {
       "id": 537429,
       "stage": "LAST_32",
-      "status": "TIMED",
+      "status": "FINISHED",
       "utcDate": "2026-07-03T03:00:00Z",
       "homeTeam": {
         "tla": "SUI",
@@ -375,11 +375,11 @@
         "crest": "https://crests.football-data.org/algeria.svg"
       },
       "score": {
-        "winner": null,
+        "winner": "HOME_TEAM",
         "duration": "REGULAR",
         "fullTime": {
-          "home": null,
-          "away": null
+          "home": 2,
+          "away": 0
         },
         "penalties": null
       }
