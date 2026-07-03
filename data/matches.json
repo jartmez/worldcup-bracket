@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-03T19:56:10.414Z",
+  "generatedAt": "2026-07-03T20:58:47.435Z",
   "competition": "FIFA World Cup 2026",
   "count": 31,
   "matches": [
@@ -337,7 +337,7 @@
     {
       "id": 537428,
       "stage": "LAST_32",
-      "status": "IN_PLAY",
+      "status": "FINISHED",
       "utcDate": "2026-07-03T18:00:00Z",
       "homeTeam": {
         "tla": "AUS",
@@ -350,13 +350,16 @@
         "crest": "https://crests.football-data.org/825.svg"
       },
       "score": {
-        "winner": "DRAW",
-        "duration": "REGULAR",
+        "winner": null,
+        "duration": "PENALTY_SHOOTOUT",
         "fullTime": {
-          "home": 1,
-          "away": 1
+          "home": 3,
+          "away": 5
         },
-        "penalties": null
+        "penalties": {
+          "home": 4,
+          "away": 4
+        }
       }
     },
     {
