@@ -1029,3 +1029,55 @@ a:has(> .mlabel.market) {
     width: 96vw;
   }
 }
+
+/* Watch-the-game CTA: green pill button beneath the bracket, matching the
+ * look-and-feel of the live indicator (pulse dot from .live-status, accent
+ * fill, Inter font). Pure flow: centered horizontally, no sticky/fixed. */
+.watch-cta {
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px 28px;
+}
+
+.watch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 18px 10px 14px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #0b0d10;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  text-decoration: none;
+  border: 1px solid var(--accent);
+  box-shadow: 0 0 14px var(--accent-dim);
+  transition: transform 0.12s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+.watch-btn:hover {
+  background: #5cf2bc;
+  box-shadow: 0 0 22px var(--accent-dim);
+  transform: translateY(-1px);
+}
+.watch-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+}
+.watch-btn:active { transform: translateY(0); }
+
+.watch-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #0b0d10;
+  animation: livepulse 1.6s ease-in-out infinite;
+}
+.watch-label { line-height: 1; }
+.watch-icon {
+  width: 14px;
+  height: 14px;
+  vertical-align: -2px;
+  flex: none;
+}
