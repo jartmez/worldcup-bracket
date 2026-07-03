@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-03T20:58:47.435Z",
+  "generatedAt": "2026-07-03T22:06:20.976Z",
   "competition": "FIFA World Cup 2026",
   "count": 31,
   "matches": [
@@ -312,7 +312,7 @@
     {
       "id": 537427,
       "stage": "LAST_32",
-      "status": "TIMED",
+      "status": "IN_PLAY",
       "utcDate": "2026-07-03T22:00:00Z",
       "homeTeam": {
         "tla": "ARG",
@@ -325,11 +325,11 @@
         "crest": "https://crests.football-data.org/cape_verde.svg"
       },
       "score": {
-        "winner": null,
+        "winner": "DRAW",
         "duration": "REGULAR",
         "fullTime": {
-          "home": null,
-          "away": null
+          "home": 0,
+          "away": 0
         },
         "penalties": null
       }
