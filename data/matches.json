@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-04T21:27:42.517Z",
+  "generatedAt": "2026-07-04T22:27:20.456Z",
   "competition": "FIFA World Cup 2026",
   "count": 31,
   "matches": [
@@ -415,7 +415,7 @@
     {
       "id": 537375,
       "stage": "LAST_16",
-      "status": "LIVE",
+      "status": "IN_PLAY",
       "utcDate": "2026-07-04T21:00:00Z",
       "homeTeam": {
         "tla": "PAR",
