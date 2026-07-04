@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-03T23:32:27.661Z",
+  "generatedAt": "2026-07-04T12:02:10.794Z",
   "competition": "FIFA World Cup 2026",
   "count": 31,
   "matches": [
@@ -312,7 +312,7 @@
     {
       "id": 537427,
       "stage": "LAST_32",
-      "status": "IN_PLAY",
+      "status": "FINISHED",
       "utcDate": "2026-07-03T22:00:00Z",
       "homeTeam": {
         "tla": "ARG",
@@ -325,11 +325,11 @@
         "crest": "https://crests.football-data.org/cape_verde.svg"
       },
       "score": {
-        "winner": "DRAW",
-        "duration": "REGULAR",
+        "winner": "HOME_TEAM",
+        "duration": "EXTRA_TIME",
         "fullTime": {
-          "home": 1,
-          "away": 1
+          "home": 3,
+          "away": 2
         },
         "penalties": null
       }
@@ -350,14 +350,14 @@
         "crest": "https://crests.football-data.org/825.svg"
       },
       "score": {
-        "winner": null,
+        "winner": "AWAY_TEAM",
         "duration": "PENALTY_SHOOTOUT",
         "fullTime": {
           "home": 3,
           "away": 5
         },
         "penalties": {
-          "home": 4,
+          "home": 2,
           "away": 4
         }
       }
@@ -390,7 +390,7 @@
     {
       "id": 537430,
       "stage": "LAST_32",
-      "status": "TIMED",
+      "status": "FINISHED",
       "utcDate": "2026-07-04T01:30:00Z",
       "homeTeam": {
         "tla": "COL",
@@ -403,11 +403,11 @@
         "crest": "https://crests.football-data.org/ghana.svg"
       },
       "score": {
-        "winner": null,
+        "winner": "HOME_TEAM",
         "duration": "REGULAR",
         "fullTime": {
-          "home": null,
-          "away": null
+          "home": 1,
+          "away": 0
         },
         "penalties": null
       }
@@ -518,14 +518,14 @@
       "status": "TIMED",
       "utcDate": "2026-07-06T19:00:00Z",
       "homeTeam": {
-        "tla": null,
-        "name": null,
-        "crest": null
+        "tla": "POR",
+        "name": "Portugal",
+        "crest": "https://crests.football-data.org/765.svg"
       },
       "awayTeam": {
-        "tla": null,
-        "name": null,
-        "crest": null
+        "tla": "ESP",
+        "name": "Spain",
+        "crest": "https://crests.football-data.org/760.svg"
       },
       "score": {
         "winner": null,
@@ -568,14 +568,14 @@
       "status": "TIMED",
       "utcDate": "2026-07-07T16:00:00Z",
       "homeTeam": {
-        "tla": null,
-        "name": null,
-        "crest": null
+        "tla": "ARG",
+        "name": "Argentina",
+        "crest": "https://crests.football-data.org/762.png"
       },
       "awayTeam": {
-        "tla": null,
-        "name": null,
-        "crest": null
+        "tla": "EGY",
+        "name": "Egypt",
+        "crest": "https://crests.football-data.org/825.svg"
       },
       "score": {
         "winner": null,
@@ -593,14 +593,14 @@
       "status": "TIMED",
       "utcDate": "2026-07-07T20:00:00Z",
       "homeTeam": {
-        "tla": null,
-        "name": null,
-        "crest": null
+        "tla": "SUI",
+        "name": "Switzerland",
+        "crest": "https://crests.football-data.org/788.svg"
       },
       "awayTeam": {
-        "tla": null,
-        "name": null,
-        "crest": null
+        "tla": "COL",
+        "name": "Colombia",
+        "crest": "https://crests.football-data.org/818.svg"
       },
       "score": {
         "winner": null,
