@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-04T17:57:50.071Z",
+  "generatedAt": "2026-07-04T19:12:05.092Z",
   "competition": "FIFA World Cup 2026",
   "count": 31,
   "matches": [
@@ -440,7 +440,7 @@
     {
       "id": 537376,
       "stage": "LAST_16",
-      "status": "IN_PLAY",
+      "status": "FINISHED",
       "utcDate": "2026-07-04T17:00:00Z",
       "homeTeam": {
         "tla": "CAN",
@@ -453,11 +453,11 @@
         "crest": "https://crests.football-data.org/morocco.svg"
       },
       "score": {
-        "winner": "DRAW",
+        "winner": "AWAY_TEAM",
         "duration": "REGULAR",
         "fullTime": {
           "home": 0,
-          "away": 0
+          "away": 3
         },
         "penalties": null
       }
