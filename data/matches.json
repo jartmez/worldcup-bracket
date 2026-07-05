@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-05T21:53:47.901Z",
+  "generatedAt": "2026-07-05T22:54:43.022Z",
   "competition": "FIFA World Cup 2026",
   "count": 31,
   "matches": [
@@ -465,7 +465,7 @@
     {
       "id": 537377,
       "stage": "LAST_16",
-      "status": "LIVE",
+      "status": "FINISHED",
       "utcDate": "2026-07-05T20:00:00Z",
       "homeTeam": {
         "tla": "BRA",
@@ -481,8 +481,8 @@
         "winner": "AWAY_TEAM",
         "duration": "REGULAR",
         "fullTime": {
-          "home": 0,
-          "away": 1
+          "home": 1,
+          "away": 2
         },
         "penalties": null
       }
