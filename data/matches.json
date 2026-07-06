@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-05T23:59:22.423Z",
+  "generatedAt": "2026-07-06T14:21:56.978Z",
   "competition": "FIFA World Cup 2026",
   "count": 31,
   "matches": [
@@ -490,7 +490,7 @@
     {
       "id": 537378,
       "stage": "LAST_16",
-      "status": "2026-07-06 01:00:00Z",
+      "status": "FINISHED",
       "utcDate": "2026-07-06T01:00:00Z",
       "homeTeam": {
         "tla": "MEX",
@@ -503,11 +503,11 @@
         "crest": "https://crests.football-data.org/770.svg"
       },
       "score": {
-        "winner": null,
+        "winner": "AWAY_TEAM",
         "duration": "REGULAR",
         "fullTime": {
-          "home": null,
-          "away": null
+          "home": 2,
+          "away": 3
         },
         "penalties": null
       }
@@ -668,14 +668,14 @@
       "status": "TIMED",
       "utcDate": "2026-07-11T21:00:00Z",
       "homeTeam": {
-        "tla": null,
-        "name": null,
-        "crest": null
+        "tla": "NOR",
+        "name": "Norway",
+        "crest": "https://crests.football-data.org/813.svg"
       },
       "awayTeam": {
-        "tla": null,
-        "name": null,
-        "crest": null
+        "tla": "ENG",
+        "name": "England",
+        "crest": "https://crests.football-data.org/770.svg"
       },
       "score": {
         "winner": null,
