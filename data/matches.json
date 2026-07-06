@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-06T19:13:09.582Z",
+  "generatedAt": "2026-07-06T21:08:31.549Z",
   "competition": "FIFA World Cup 2026",
   "count": 31,
   "matches": [
@@ -515,7 +515,7 @@
     {
       "id": 537379,
       "stage": "LAST_16",
-      "status": "LIVE",
+      "status": "FINISHED",
       "utcDate": "2026-07-06T19:00:00Z",
       "homeTeam": {
         "tla": "POR",
@@ -528,11 +528,11 @@
         "crest": "https://crests.football-data.org/760.svg"
       },
       "score": {
-        "winner": "DRAW",
+        "winner": "AWAY_TEAM",
         "duration": "REGULAR",
         "fullTime": {
           "home": 0,
-          "away": 0
+          "away": 1
         },
         "penalties": null
       }
