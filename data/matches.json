@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-07T21:50:14.662Z",
+  "generatedAt": "2026-07-07T22:52:54.005Z",
   "competition": "FIFA World Cup 2026",
   "count": 31,
   "matches": [
@@ -590,7 +590,7 @@
     {
       "id": 537382,
       "stage": "LAST_16",
-      "status": "IN_PLAY",
+      "status": "FINISHED",
       "utcDate": "2026-07-07T20:00:00Z",
       "homeTeam": {
         "tla": "SUI",
@@ -603,13 +603,16 @@
         "crest": "https://crests.football-data.org/818.svg"
       },
       "score": {
-        "winner": "DRAW",
-        "duration": "REGULAR",
+        "winner": null,
+        "duration": "PENALTY_SHOOTOUT",
         "fullTime": {
-          "home": 0,
-          "away": 0
+          "home": 2,
+          "away": 2
         },
-        "penalties": null
+        "penalties": {
+          "home": 2,
+          "away": 2
+        }
       }
     },
     {
