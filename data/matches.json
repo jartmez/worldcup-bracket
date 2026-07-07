@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-07T22:52:54.005Z",
+  "generatedAt": "2026-07-07T23:50:42.056Z",
   "competition": "FIFA World Cup 2026",
   "count": 31,
   "matches": [
@@ -606,12 +606,12 @@
         "winner": null,
         "duration": "PENALTY_SHOOTOUT",
         "fullTime": {
-          "home": 2,
-          "away": 2
+          "home": 4,
+          "away": 3
         },
         "penalties": {
-          "home": 2,
-          "away": 2
+          "home": 3,
+          "away": 3
         }
       }
     },
