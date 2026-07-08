@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-07T23:50:42.056Z",
+  "generatedAt": "2026-07-08T12:14:52.896Z",
   "competition": "FIFA World Cup 2026",
   "count": 31,
   "matches": [
@@ -603,14 +603,14 @@
         "crest": "https://crests.football-data.org/818.svg"
       },
       "score": {
-        "winner": null,
+        "winner": "HOME_TEAM",
         "duration": "PENALTY_SHOOTOUT",
         "fullTime": {
           "home": 4,
           "away": 3
         },
         "penalties": {
-          "home": 3,
+          "home": 4,
           "away": 3
         }
       }
@@ -696,14 +696,14 @@
       "status": "TIMED",
       "utcDate": "2026-07-12T01:00:00Z",
       "homeTeam": {
-        "tla": null,
-        "name": null,
-        "crest": null
+        "tla": "ARG",
+        "name": "Argentina",
+        "crest": "https://crests.football-data.org/762.png"
       },
       "awayTeam": {
-        "tla": null,
-        "name": null,
-        "crest": null
+        "tla": "SUI",
+        "name": "Switzerland",
+        "crest": "https://crests.football-data.org/788.svg"
       },
       "score": {
         "winner": null,
