@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-10T19:17:33.228Z",
+  "generatedAt": "2026-07-10T20:47:32.218Z",
   "competition": "FIFA World Cup 2026",
   "count": 31,
   "matches": [
@@ -659,8 +659,8 @@
         "winner": "DRAW",
         "duration": "REGULAR",
         "fullTime": {
-          "home": 0,
-          "away": 0
+          "home": 1,
+          "away": 1
         },
         "penalties": null
       }
