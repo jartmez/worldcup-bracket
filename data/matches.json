@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-10T01:06:38.641Z",
+  "generatedAt": "2026-07-10T13:05:11.283Z",
   "competition": "FIFA World Cup 2026",
   "count": 31,
   "matches": [
@@ -721,9 +721,9 @@
       "status": "TIMED",
       "utcDate": "2026-07-14T19:00:00Z",
       "homeTeam": {
-        "tla": null,
-        "name": null,
-        "crest": null
+        "tla": "FRA",
+        "name": "France",
+        "crest": "https://crests.football-data.org/773.svg"
       },
       "awayTeam": {
         "tla": null,
