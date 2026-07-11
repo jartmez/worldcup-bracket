@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-10T23:51:55.136Z",
+  "generatedAt": "2026-07-11T11:45:30.456Z",
   "competition": "FIFA World Cup 2026",
   "count": 31,
   "matches": [
@@ -726,9 +726,9 @@
         "crest": "https://crests.football-data.org/773.svg"
       },
       "awayTeam": {
-        "tla": null,
-        "name": null,
-        "crest": null
+        "tla": "ESP",
+        "name": "Spain",
+        "crest": "https://crests.football-data.org/760.svg"
       },
       "score": {
         "winner": null,
