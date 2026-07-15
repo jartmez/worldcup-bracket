@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-15T20:03:33.328Z",
+  "generatedAt": "2026-07-15T21:28:14.088Z",
   "competition": "FIFA World Cup 2026",
   "count": 31,
   "matches": [
@@ -743,7 +743,7 @@
     {
       "id": 537388,
       "stage": "SEMI_FINALS",
-      "status": "PAUSED",
+      "status": "FINISHED",
       "utcDate": "2026-07-15T19:00:00Z",
       "homeTeam": {
         "tla": "ENG",
@@ -756,11 +756,11 @@
         "crest": "https://crests.football-data.org/762.png"
       },
       "score": {
-        "winner": "DRAW",
+        "winner": "AWAY_TEAM",
         "duration": "REGULAR",
         "fullTime": {
-          "home": 0,
-          "away": 0
+          "home": 1,
+          "away": 2
         },
         "penalties": null
       }
