@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-19T22:14:15.597Z",
+  "generatedAt": "2026-07-19T23:26:00.864Z",
   "competition": "FIFA World Cup 2026",
   "count": 31,
   "matches": [
@@ -782,7 +782,7 @@
       },
       "score": {
         "winner": "HOME_TEAM",
-        "duration": "REGULAR",
+        "duration": "EXTRA_TIME",
         "fullTime": {
           "home": 1,
           "away": 0
