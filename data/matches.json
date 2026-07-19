@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-19T20:03:47.095Z",
+  "generatedAt": "2026-07-19T21:12:50.583Z",
   "competition": "FIFA World Cup 2026",
   "count": 31,
   "matches": [
@@ -768,7 +768,7 @@
     {
       "id": 537390,
       "stage": "FINAL",
-      "status": "PAUSED",
+      "status": "IN_PLAY",
       "utcDate": "2026-07-19T19:00:00Z",
       "homeTeam": {
         "tla": "ESP",
